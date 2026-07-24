@@ -6,12 +6,15 @@ function VoiceAIAssistant() {
     const [transcript, setTranscript] = React.useState('');
     const [waveLevel, setWaveLevel] = React.useState(0);
 
+    // Use a ref to track the latest transcript value (avoids stale closure)
+    const transcriptRef = React.useRef('');
+
     const presetPrompts = [
         "Show hotspots in Bengaluru South",
         "Summarize incidents in the last 24 hours",
         "Dispatch nearest unit to MG Road",
         "Translate this Kannada statement to English",
-        "ಮೈಸೂರಿನಲ್ಲಿ ಕಳವು ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ"
+        "\u0CAE\u0CC8\u0CB8\u0CC2\u0CB0\u0CBF\u0CA8\u0CB2\u0CCD\u0CB2\u0CBF \u0C95\u0CB3\u0CB5\u0CC1 \u0CAA\u0CCD\u0CB0\u0C95\u0CB0\u0CA3\u0C97\u0CB3\u0CA8\u0CCD\u0CA8\u0CC1 \u0CA4\u0CCB\u0CB0\u0CBF\u0CB8\u0CBF"
     ];
 
     React.useEffect(() => {
@@ -29,8 +32,9 @@ function VoiceAIAssistant() {
     const handleMicClick = () => {
         if (!isListening) {
             setIsListening(true);
-            setStatusText('Listening in English / ಕನ್ನಡ...');
+            setStatusText('Listening in English / \u0C95\u0CA8\u0CCD\u0CA8\u0CA1...');
             setTranscript('');
+            transcriptRef.current = '';
 
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (SpeechRecognition) {
@@ -47,33 +51,48 @@ function VoiceAIAssistant() {
                         text += event.results[i][0].transcript;
                     }
                     setTranscript(text);
+                    transcriptRef.current = text;
                 };
 
                 recognition.onend = () => {
                     setIsListening(false);
-                    setStatusText('Transcribing complete. Executing query...');
-                    if (window.switchToTab) window.switchToTab('ai-view');
-                    if (window.sendAIQuery && transcript.trim()) {
-                        window.sendAIQuery(transcript.trim());
+                    const finalText = transcriptRef.current.trim();
+                    if (finalText) {
+                        setStatusText('Transcribing complete. Executing query...');
+                        // Navigate to AI view and send query
+                        if (typeof switchToTab === 'function') switchToTab('ai-view');
+                        // Also populate the AI chat input
+                        const chatInput = document.getElementById('ai-chat-input');
+                        if (chatInput) chatInput.value = finalText;
+                        if (typeof sendAIQuery === 'function') {
+                            sendAIQuery(finalText);
+                        }
+                    } else {
+                        setStatusText('No speech detected. Tap the mic to try again.');
                     }
                 };
 
-                recognition.onerror = () => {
+                recognition.onerror = (event) => {
                     setIsListening(false);
-                    setStatusText('Tap the mic to start');
+                    console.warn('Voice recognition error:', event.error);
+                    if (event.error === 'not-allowed') {
+                        setStatusText('Microphone access denied. Please allow mic in browser settings.');
+                    } else {
+                        setStatusText('Voice error. Tap the mic to try again.');
+                    }
                 };
 
-                recognition.start();
-            } else {
-                // MediaRecorder / IndicWav2Vec ASR engine fallback
-                setTimeout(() => {
+                try {
+                    recognition.start();
+                } catch (err) {
                     setIsListening(false);
-                    const sampleQuery = "ಮೈಸೂರಿನಲ್ಲಿ ಕಳವು ಪ್ರಕರಣಗಳು";
-                    setTranscript(sampleQuery);
-                    setStatusText(`Transcribed: "${sampleQuery}"`);
-                    if (window.switchToTab) window.switchToTab('ai-view');
-                    if (window.sendAIQuery) window.sendAIQuery(sampleQuery);
-                }, 2200);
+                    setStatusText('Could not start mic. Try again.');
+                    console.error('Recognition start error:', err);
+                }
+            } else {
+                // No Web Speech API - show message
+                setIsListening(false);
+                setStatusText('Web Speech API not supported. Use the AI Assistant tab mic button instead.');
             }
         } else {
             setIsListening(false);
@@ -83,9 +102,12 @@ function VoiceAIAssistant() {
 
     const handlePromptClick = (prompt) => {
         setTranscript(prompt);
-        setStatusText(`Executing: "${prompt}"`);
-        if (window.switchToTab) window.switchToTab('ai-view');
-        if (window.sendAIQuery) window.sendAIQuery(prompt);
+        setStatusText('Executing: "' + prompt + '"');
+        // Navigate to AI view and execute
+        if (typeof switchToTab === 'function') switchToTab('ai-view');
+        const chatInput = document.getElementById('ai-chat-input');
+        if (chatInput) chatInput.value = prompt;
+        if (typeof sendAIQuery === 'function') sendAIQuery(prompt);
     };
 
     return e('div', { className: 'react-voice-ai-card' }, [
@@ -93,7 +115,7 @@ function VoiceAIAssistant() {
         e('div', { key: 'mic-wrapper', className: 'react-mic-wrapper' }, [
             e('button', {
                 key: 'mic-btn',
-                className: `react-mic-circle-btn ${isListening ? 'listening' : ''}`,
+                className: 'react-mic-circle-btn ' + (isListening ? 'listening' : ''),
                 onClick: handleMicClick,
                 title: 'Tap mic to start voice search (English & Kannada)'
             }, [
@@ -117,35 +139,35 @@ function VoiceAIAssistant() {
 
         // Status Indicator Line
         e('div', { key: 'status-tag', className: 'react-status-tag' }, [
-            e('span', { key: 'dot', className: `react-status-dot ${isListening ? 'active' : ''}` }),
+            e('span', { key: 'dot', className: 'react-status-dot ' + (isListening ? 'active' : '') }),
             statusText
         ]),
 
         // Dotted Waveform Line Animation
         e('div', { key: 'wave-line', className: 'react-wave-line' },
-            Array.from({ length: 28 }).map((_, i) =>
-                e('span', {
+            Array.from({ length: 28 }).map(function(_, i) {
+                return e('span', {
                     key: i,
-                    className: `wave-dot ${isListening && (i % 4 === waveLevel) ? 'active' : ''}`
-                })
-            )
+                    className: 'wave-dot ' + (isListening && (i % 4 === waveLevel) ? 'active' : '')
+                });
+            })
         ),
 
         // Live Transcript Box
-        transcript && e('div', { key: 'transcript-box', className: 'react-transcript-box' }, [
+        transcript ? e('div', { key: 'transcript-box', className: 'react-transcript-box' }, [
             e('span', { key: 'lbl', className: 't-label' }, 'Speech Transcribed: '),
             transcript
-        ]),
+        ]) : null,
 
         // Preset Prompt Pill Buttons
         e('div', { key: 'pills-container', className: 'react-preset-pills' },
-            presetPrompts.map((prompt, idx) =>
-                e('button', {
+            presetPrompts.map(function(prompt, idx) {
+                return e('button', {
                     key: idx,
                     className: 'react-prompt-pill',
-                    onClick: () => handlePromptClick(prompt)
-                }, `"${prompt}"`)
-            )
+                    onClick: function() { handlePromptClick(prompt); }
+                }, '"' + prompt + '"');
+            })
         )
     ]);
 }
@@ -158,6 +180,6 @@ window.renderReactVoiceAI = function() {
     }
 };
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", function() {
     window.renderReactVoiceAI();
 });
