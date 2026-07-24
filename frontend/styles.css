@@ -1418,6 +1418,36 @@ body.ksp-theme {
     transform: translateY(-1px);
 }
 
+/* React Voice AI - Language Toggle */
+.react-lang-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.react-lang-btn {
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.react-lang-btn:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.react-lang-btn.active {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+}
+
 @media (max-width: 1024px) {
     .stats-cards-grid { grid-template-columns: 1fr 1fr; }
     .ai-split-layout { grid-template-columns: 1fr; }
