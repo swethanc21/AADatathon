@@ -16,6 +16,7 @@ let visNetworkInstance = null;
 
 let masterCrimesData = [];
 let currentAlertsData = [];
+let conversationHistory = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     initIcons();
@@ -1086,7 +1087,8 @@ async function sendAIQuery(questionText) {
     const q = questionText.trim();
     
     // Clear input field
-    document.getElementById("ai-chat-input").value = "";
+    const chatInputEl = document.getElementById("ai-chat-input");
+    if (chatInputEl) chatInputEl.value = "";
 
     // 1. Append User Message Bubble to Thread
     appendUserChatMessage(q);
@@ -1098,6 +1100,20 @@ async function sendAIQuery(questionText) {
             body: JSON.stringify({ question: q })
         });
         const data = await res.json();
+
+        // Store in conversation history for PDF export
+        conversationHistory.push({
+            timestamp: new Date().toLocaleString(),
+            question: q,
+            narrative_en: data.narrative_english || '',
+            narrative_kn: data.narrative_kannada || '',
+            insight_en: data.companion_insight_english || '',
+            insight_kn: data.companion_insight_kannada || '',
+            sql: data.generated_sql || '',
+            result_count: data.result_count || 0,
+            records: (data.records || []).slice(0, 20),
+            stats: data.stats || {}
+        });
 
         // 2. Append AI Bot Message Bubble to Thread
         appendBotChatMessage(data);
@@ -1188,93 +1204,89 @@ async function loadNetworkGraph() {
 }
 
 function exportConversationPDF() {
-    const qText = document.getElementById("ai-chat-input").value || "KSP Intelligence Search";
-    const sqlText = document.getElementById("ai-sql-display").textContent || "";
-    const execTime = document.getElementById("ai-exec-time").textContent || "";
-    const narEn = document.getElementById("ai-narrative-en").textContent || "";
-    const narKn = document.getElementById("ai-narrative-kn").textContent || "";
-    const compInsight = document.getElementById("ai-companion-insight").textContent || "";
+    if (conversationHistory.length === 0) {
+        alert('No conversation data to export. Ask a question first, then export the report.');
+        return;
+    }
 
-    const tableRows = [];
-    document.querySelectorAll("#ai-results-table tbody tr").forEach(tr => {
-        const cols = Array.from(tr.querySelectorAll("td")).map(td => td.innerText);
-        if (cols.length > 0) tableRows.push(cols);
+    // Build conversation sections HTML
+    let conversationSections = '';
+    conversationHistory.forEach(function(entry, idx) {
+        const recordRows = (entry.records || []).map(function(r) {
+            return '<tr>' +
+                '<td>' + (r.case_id || '--') + '</td>' +
+                '<td>' + (r.crime_type || '--') + '</td>' +
+                '<td>' + (r.division || '--') + '</td>' +
+                '<td>' + (r.severity || '--') + '</td>' +
+                '<td>' + (r.status || '--') + '</td>' +
+                '<td>' + (r.suspect_name || 'Unknown') + '</td>' +
+                '</tr>';
+        }).join('');
+
+        const stats = entry.stats || {};
+        const locBreakdown = (stats.top_locations || []).map(function(loc) {
+            return '<li>' + loc.location + ': <strong>' + loc.count + ' cases</strong></li>';
+        }).join('');
+
+        conversationSections += '<div class="exchange">' +
+            '<h3>Exchange ' + (idx + 1) + ' — ' + entry.timestamp + '</h3>' +
+            '<div class="section"><h4>Investigator Query</h4><p class="query-text">' + entry.question + '</p></div>' +
+            '<div class="section"><h4>AI Response (English)</h4><p>' + entry.narrative_en + '</p>' +
+            (entry.narrative_kn ? '<p style="color: #1e1b4b; font-weight:600;">' + entry.narrative_kn + '</p>' : '') +
+            '</div>' +
+            (entry.insight_en ? '<div class="insight-badge"><strong>Tactical Insight:</strong> ' + entry.insight_en + '</div>' : '') +
+            (entry.sql ? '<div class="section"><h4>Generated SQL Query</h4><div class="sql-box">' + entry.sql + '</div></div>' : '') +
+            '<div class="section"><h4>Statistics</h4>' +
+            '<p>Total Results: <strong>' + entry.result_count + '</strong>' +
+            (stats.active_cases !== undefined ? ' | Active: <strong>' + stats.active_cases + '</strong>' : '') +
+            (stats.solved_cases !== undefined ? ' | Solved: <strong>' + stats.solved_cases + '</strong>' : '') +
+            (stats.total_loss ? ' | Financial Loss: <strong>₹' + Math.round(stats.total_loss).toLocaleString() + '</strong>' : '') +
+            '</p>' +
+            (locBreakdown ? '<h4>Location Breakdown</h4><ul>' + locBreakdown + '</ul>' : '') +
+            '</div>' +
+            (recordRows ? '<div class="section"><h4>Matched Records (' + entry.records.length + ')</h4>' +
+            '<table><thead><tr><th>Case ID</th><th>Crime</th><th>Division</th><th>Severity</th><th>Status</th><th>Suspect</th></tr></thead>' +
+            '<tbody>' + recordRows + '</tbody></table></div>' : '') +
+            '</div><hr>';
     });
 
-    const printWin = window.open('', '_blank');
-    printWin.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>KSP Police Intelligence Audit Report</title>
-            <style>
-                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; color: #1e293b; line-height: 1.6; }
-                .header { border-bottom: 3px solid #1e3a8a; padding-bottom: 15px; margin-bottom: 25px; }
-                .header h1 { color: #1e3a8a; margin: 0; font-size: 24px; }
-                .header p { color: #64748b; margin: 5px 0 0 0; font-size: 14px; }
-                .section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
-                .section h3 { margin-top: 0; color: #0f172a; font-size: 16px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
-                .sql-box { background: #0f172a; color: #38bdf8; font-family: monospace; padding: 12px; border-radius: 6px; font-size: 13px; word-break: break-all; }
-                .insight-badge { background: #eff6ff; border-left: 4px solid #2563eb; padding: 10px; color: #1e40af; font-weight: 600; margin-top: 10px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-                th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; font-size: 13px; }
-                th { background: #f1f5f9; color: #334155; }
-                .footer { margin-top: 40px; font-size: 12px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 15px; }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>KARNATAKA STATE POLICE</h1>
-                <p>Official Crime Intelligence & Field Investigation Briefing Report</p>
-                <p><strong>Generated On:</strong> ${new Date().toLocaleString()} | <strong>Execution Latency:</strong> ${execTime}</p>
-            </div>
-
-            <div class="section">
-                <h3>1. Investigator Natural Language Query</h3>
-                <p><strong>Query Prompt:</strong> ${qText}</p>
-            </div>
-
-            <div class="section">
-                <h3>2. Explainable AI SQL Audit Trail</h3>
-                <div class="sql-box">${sqlText}</div>
-            </div>
-
-            <div class="section">
-                <h3>3. Police Companion Narrative & Field Insights</h3>
-                <p>${narEn}</p>
-                ${narKn ? `<p>${narKn}</p>` : ''}
-                <div class="insight-badge">${compInsight}</div>
-            </div>
-
-            <div class="section">
-                <h3>4. Matched Database Crime Records (${tableRows.length} Records)</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Case ID</th>
-                            <th>Crime Type</th>
-                            <th>Division</th>
-                            <th>Severity</th>
-                            <th>Status</th>
-                            <th>Suspect</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${tableRows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="footer">
-                Confidential - Karnataka State Police Command Network - Audit Trail Logged
-            </div>
-
-            <script>
-                window.onload = function() { window.print(); }
-            </script>
-        </body>
-        </html>
-    `);
+    var printWin = window.open('', '_blank');
+    if (!printWin) {
+        alert('Pop-up blocked! Please allow pop-ups for this site to download the PDF report.');
+        return;
+    }
+    printWin.document.write(
+        '<!DOCTYPE html><html><head><title>KSP Police Intelligence Report</title>' +
+        '<style>' +
+        'body { font-family: "Segoe UI", Tahoma, sans-serif; padding: 30px; color: #1e293b; line-height: 1.6; }' +
+        '.header { border-bottom: 3px solid #1e3a8a; padding-bottom: 15px; margin-bottom: 25px; }' +
+        '.header h1 { color: #1e3a8a; margin: 0; font-size: 22px; }' +
+        '.header p { color: #64748b; margin: 5px 0 0 0; font-size: 13px; }' +
+        '.exchange { margin-bottom: 30px; }' +
+        '.exchange h3 { color: #0f172a; font-size: 16px; background: #f1f5f9; padding: 8px 12px; border-radius: 6px; }' +
+        '.section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 14px; }' +
+        '.section h4 { margin: 0 0 8px 0; color: #334155; font-size: 14px; }' +
+        '.query-text { font-size: 15px; font-weight: 700; color: #1e40af; }' +
+        '.sql-box { background: #0f172a; color: #38bdf8; font-family: monospace; padding: 10px; border-radius: 6px; font-size: 12px; word-break: break-all; }' +
+        '.insight-badge { background: #eff6ff; border-left: 4px solid #2563eb; padding: 10px; color: #1e40af; font-weight: 600; margin-bottom: 14px; border-radius: 4px; }' +
+        'table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }' +
+        'th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }' +
+        'th { background: #f1f5f9; color: #334155; font-weight: 700; }' +
+        'hr { border: none; border-top: 1px dashed #cbd5e1; margin: 24px 0; }' +
+        '.footer { margin-top: 40px; font-size: 11px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 12px; }' +
+        'ul { padding-left: 20px; }' +
+        '@media print { body { padding: 15px; } }' +
+        '</style></head><body>' +
+        '<div class="header">' +
+        '<h1>KARNATAKA STATE POLICE — CRIME INTELLIGENCE REPORT</h1>' +
+        '<p>Official AI-Assisted Investigation Briefing &amp; Audit Trail</p>' +
+        '<p><strong>Generated:</strong> ' + new Date().toLocaleString() + ' | <strong>Total Exchanges:</strong> ' + conversationHistory.length + '</p>' +
+        '</div>' +
+        conversationSections +
+        '<div class="footer">Confidential — Karnataka State Police Command Network — AI Audit Trail Logged</div>' +
+        '<script>window.onload = function() { window.print(); }<\/script>' +
+        '</body></html>'
+    );
     printWin.document.close();
 }
 
