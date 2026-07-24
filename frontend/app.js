@@ -1205,14 +1205,14 @@ async function loadNetworkGraph() {
 
 function exportConversationPDF() {
     if (conversationHistory.length === 0) {
-        alert('No conversation data to export. Ask a question first, then export the report.');
+        alert('No conversation data to export. Ask a question first, then click PDF Report.');
         return;
     }
 
     // Build conversation sections HTML
-    let conversationSections = '';
+    var conversationSections = '';
     conversationHistory.forEach(function(entry, idx) {
-        const recordRows = (entry.records || []).map(function(r) {
+        var recordRows = (entry.records || []).map(function(r) {
             return '<tr>' +
                 '<td>' + (r.case_id || '--') + '</td>' +
                 '<td>' + (r.crime_type || '--') + '</td>' +
@@ -1223,71 +1223,73 @@ function exportConversationPDF() {
                 '</tr>';
         }).join('');
 
-        const stats = entry.stats || {};
-        const locBreakdown = (stats.top_locations || []).map(function(loc) {
+        var stats = entry.stats || {};
+        var locBreakdown = (stats.top_locations || []).map(function(loc) {
             return '<li>' + loc.location + ': <strong>' + loc.count + ' cases</strong></li>';
         }).join('');
 
         conversationSections += '<div class="exchange">' +
-            '<h3>Exchange ' + (idx + 1) + ' — ' + entry.timestamp + '</h3>' +
+            '<h3>Exchange ' + (idx + 1) + ' &mdash; ' + entry.timestamp + '</h3>' +
             '<div class="section"><h4>Investigator Query</h4><p class="query-text">' + entry.question + '</p></div>' +
             '<div class="section"><h4>AI Response (English)</h4><p>' + entry.narrative_en + '</p>' +
-            (entry.narrative_kn ? '<p style="color: #1e1b4b; font-weight:600;">' + entry.narrative_kn + '</p>' : '') +
+            (entry.narrative_kn ? '<p style="color:#1e1b4b;font-weight:600;">' + entry.narrative_kn + '</p>' : '') +
             '</div>' +
             (entry.insight_en ? '<div class="insight-badge"><strong>Tactical Insight:</strong> ' + entry.insight_en + '</div>' : '') +
-            (entry.sql ? '<div class="section"><h4>Generated SQL Query</h4><div class="sql-box">' + entry.sql + '</div></div>' : '') +
+            (entry.sql ? '<div class="section"><h4>Generated SQL</h4><div class="sql-box">' + entry.sql + '</div></div>' : '') +
             '<div class="section"><h4>Statistics</h4>' +
             '<p>Total Results: <strong>' + entry.result_count + '</strong>' +
             (stats.active_cases !== undefined ? ' | Active: <strong>' + stats.active_cases + '</strong>' : '') +
             (stats.solved_cases !== undefined ? ' | Solved: <strong>' + stats.solved_cases + '</strong>' : '') +
-            (stats.total_loss ? ' | Financial Loss: <strong>₹' + Math.round(stats.total_loss).toLocaleString() + '</strong>' : '') +
+            (stats.total_loss ? ' | Loss: <strong>&#8377;' + Math.round(stats.total_loss).toLocaleString() + '</strong>' : '') +
             '</p>' +
             (locBreakdown ? '<h4>Location Breakdown</h4><ul>' + locBreakdown + '</ul>' : '') +
             '</div>' +
-            (recordRows ? '<div class="section"><h4>Matched Records (' + entry.records.length + ')</h4>' +
+            (recordRows ? '<div class="section"><h4>Records (' + entry.records.length + ')</h4>' +
             '<table><thead><tr><th>Case ID</th><th>Crime</th><th>Division</th><th>Severity</th><th>Status</th><th>Suspect</th></tr></thead>' +
             '<tbody>' + recordRows + '</tbody></table></div>' : '') +
             '</div><hr>';
     });
 
-    var printWin = window.open('', '_blank');
-    if (!printWin) {
-        alert('Pop-up blocked! Please allow pop-ups for this site to download the PDF report.');
-        return;
-    }
-    printWin.document.write(
-        '<!DOCTYPE html><html><head><title>KSP Police Intelligence Report</title>' +
+    var htmlContent = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+        '<title>KSP Police Intelligence Report</title>' +
         '<style>' +
-        'body { font-family: "Segoe UI", Tahoma, sans-serif; padding: 30px; color: #1e293b; line-height: 1.6; }' +
-        '.header { border-bottom: 3px solid #1e3a8a; padding-bottom: 15px; margin-bottom: 25px; }' +
-        '.header h1 { color: #1e3a8a; margin: 0; font-size: 22px; }' +
-        '.header p { color: #64748b; margin: 5px 0 0 0; font-size: 13px; }' +
-        '.exchange { margin-bottom: 30px; }' +
-        '.exchange h3 { color: #0f172a; font-size: 16px; background: #f1f5f9; padding: 8px 12px; border-radius: 6px; }' +
-        '.section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 14px; }' +
-        '.section h4 { margin: 0 0 8px 0; color: #334155; font-size: 14px; }' +
-        '.query-text { font-size: 15px; font-weight: 700; color: #1e40af; }' +
-        '.sql-box { background: #0f172a; color: #38bdf8; font-family: monospace; padding: 10px; border-radius: 6px; font-size: 12px; word-break: break-all; }' +
-        '.insight-badge { background: #eff6ff; border-left: 4px solid #2563eb; padding: 10px; color: #1e40af; font-weight: 600; margin-bottom: 14px; border-radius: 4px; }' +
-        'table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }' +
-        'th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }' +
-        'th { background: #f1f5f9; color: #334155; font-weight: 700; }' +
-        'hr { border: none; border-top: 1px dashed #cbd5e1; margin: 24px 0; }' +
-        '.footer { margin-top: 40px; font-size: 11px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 12px; }' +
-        'ul { padding-left: 20px; }' +
-        '@media print { body { padding: 15px; } }' +
+        'body{font-family:"Segoe UI",Tahoma,sans-serif;padding:30px;color:#1e293b;line-height:1.6}' +
+        '.header{border-bottom:3px solid #1e3a8a;padding-bottom:15px;margin-bottom:25px}' +
+        '.header h1{color:#1e3a8a;margin:0;font-size:22px}' +
+        '.header p{color:#64748b;margin:5px 0 0;font-size:13px}' +
+        '.exchange{margin-bottom:30px}' +
+        '.exchange h3{color:#0f172a;font-size:16px;background:#f1f5f9;padding:8px 12px;border-radius:6px}' +
+        '.section{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:14px}' +
+        '.section h4{margin:0 0 8px;color:#334155;font-size:14px}' +
+        '.query-text{font-size:15px;font-weight:700;color:#1e40af}' +
+        '.sql-box{background:#0f172a;color:#38bdf8;font-family:monospace;padding:10px;border-radius:6px;font-size:12px;word-break:break-all}' +
+        '.insight-badge{background:#eff6ff;border-left:4px solid #2563eb;padding:10px;color:#1e40af;font-weight:600;margin-bottom:14px;border-radius:4px}' +
+        'table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}' +
+        'th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}' +
+        'th{background:#f1f5f9;color:#334155;font-weight:700}' +
+        'hr{border:none;border-top:1px dashed #cbd5e1;margin:24px 0}' +
+        '.footer{margin-top:40px;font-size:11px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:12px}' +
+        'ul{padding-left:20px}' +
         '</style></head><body>' +
         '<div class="header">' +
-        '<h1>KARNATAKA STATE POLICE — CRIME INTELLIGENCE REPORT</h1>' +
+        '<h1>KARNATAKA STATE POLICE &mdash; CRIME INTELLIGENCE REPORT</h1>' +
         '<p>Official AI-Assisted Investigation Briefing &amp; Audit Trail</p>' +
         '<p><strong>Generated:</strong> ' + new Date().toLocaleString() + ' | <strong>Total Exchanges:</strong> ' + conversationHistory.length + '</p>' +
         '</div>' +
         conversationSections +
-        '<div class="footer">Confidential — Karnataka State Police Command Network — AI Audit Trail Logged</div>' +
-        '<script>window.onload = function() { window.print(); }<\/script>' +
-        '</body></html>'
-    );
-    printWin.document.close();
+        '<div class="footer">Confidential &mdash; Karnataka State Police Command Network &mdash; AI Audit Trail Logged</div>' +
+        '</body></html>';
+
+    // Direct file download using Blob (bypasses popup blockers)
+    var blob = new Blob([htmlContent], { type: 'text/html' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'KSP_Intelligence_Report_' + new Date().toISOString().slice(0, 10) + '.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 /* Global Multi-Field Search Engine */
