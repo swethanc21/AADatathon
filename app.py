@@ -443,5 +443,8 @@ if __name__ == "__main__":
     print(" KSP Intelligent Crime Analytics & Field Reporting Platform ")
     print(" Server launching on http://127.0.0.1:8000 ")
     print("===============================================================")
-    webbrowser.open("http://127.0.0.1:8000")
+    try:
+        os.system("start chrome http://127.0.0.1:8000")
+    except Exception:
+        webbrowser.open("http://127.0.0.1:8000")
     uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
