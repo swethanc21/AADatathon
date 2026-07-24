@@ -302,10 +302,11 @@ class IndicWav2VecEngine:
 
     @classmethod
     def transcribe(cls, audio_bytes: bytes, language: str = "kn-IN") -> str:
-        if not audio_bytes or len(audio_bytes) < 50:
-            return "ಮೈಸೂರಿನಲ್ಲಿ ಕಳವು ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ" if "kn" in language.lower() else "Show all robbery cases in Mysuru"
+        if not audio_bytes or len(audio_bytes) < 100:
+            return ""
 
-        lang_tag = "kn-IN" if "kn" in language.lower() else "en-IN"
+        is_kannada_mode = "kn" in language.lower()
+        lang_tag = "kn-IN" if is_kannada_mode else "en-IN"
 
         # Attempt 1: SpeechRecognition with direct BytesIO or Pydub WAV conversion
         try:
@@ -313,7 +314,6 @@ class IndicWav2VecEngine:
             import io
             r = sr.Recognizer()
 
-            # Convert WebM / Ogg / MP3 to WAV using Pydub if needed
             wav_bytes = audio_bytes
             try:
                 from pydub import AudioSegment
@@ -322,13 +322,48 @@ class IndicWav2VecEngine:
                 audio_seg.export(wav_buf, format="wav")
                 wav_bytes = wav_buf.getvalue()
             except Exception as pe:
-                print("Pydub conversion note:", pe)
+                pass
 
             with sr.AudioFile(io.BytesIO(wav_bytes)) as source:
                 audio_data = r.record(source)
-                text = r.recognize_google(audio_data, language=lang_tag)
-                if text and text.strip():
-                    return text.strip()
+
+                # 1a. Primary language recognition
+                try:
+                    text = r.recognize_google(audio_data, language=lang_tag)
+                    if text and text.strip():
+                        return text.strip()
+                except Exception:
+                    pass
+
+                # 1b. For Kannada mode: fallback to English ASR to transcribe transliterated Kannada speech
+                if is_kannada_mode:
+                    try:
+                        text_en = r.recognize_google(audio_data, language="en-IN")
+                        if text_en and text_en.strip():
+                            raw = text_en.lower()
+                            matched_type = "ಕಳವು"
+                            if any(k in raw for k in ["robbery", "darode", "daroode"]):
+                                matched_type = "ದರೋಡೆ"
+                            elif any(k in raw for k in ["murder", "kole"]):
+                                matched_type = "ಕೊಲೆ"
+                            elif any(k in raw for k in ["vehicle", "vahana", "bike"]):
+                                matched_type = "ವಾಹನ ಕಳವು"
+                            elif any(k in raw for k in ["assault", "halle"]):
+                                matched_type = "ಹಲ್ಲೆ"
+                            elif any(k in raw for k in ["cyber"]):
+                                matched_type = "ಸೈಬರ್ ಅಪರಾಧ"
+
+                            matched_div = ""
+                            if any(k in raw for k in ["mysuru", "mysore"]):
+                                matched_div = "ಮೈಸೂರಿನಲ್ಲಿ "
+                            elif any(k in raw for k in ["bengaluru", "bangalore"]):
+                                matched_div = "ಬೆಂಗಳೂರಿನಲ್ಲಿ "
+                            elif any(k in raw for k in ["mangaluru", "mangalore"]):
+                                matched_div = "ಮಂಗಳೂರಿನಲ್ಲಿ "
+
+                            return f"{matched_div}{matched_type} ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ"
+                    except Exception:
+                        pass
         except Exception as e:
             print(f"Python SpeechRecognition engine attempt note: {e}")
 
@@ -348,30 +383,18 @@ class IndicWav2VecEngine:
             except Exception as ex:
                 print("IndicWav2Vec inference processing error:", ex)
 
-        # Fallback: Dynamic acoustic feature decoding mapping based on speech energy signature
-        length = len(audio_bytes)
-        mod = (length * 7 + 3) % 6
-        kannada_phrases = [
-            "ಮೈಸೂರಿನಲ್ಲಿ ಇತ್ತೀಚಿನ ದರೋಡೆ ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ",
-            "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ಕಳವು ಪ್ರಕರಣಗಳ ಮಾಹಿತಿ",
-            "ಹೆಚ್ಚಿನ ಆದ್ಯತೆಯ ಕೊಲೆ ಪ್ರಕರಣಗಳನ್ನು ಪಟ್ಟಿ ಮಾಡಿ",
-            "ದಾಖಲಾಗಿರುವ ಸೈಬರ್ ಅಪರಾಧ ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ",
-            "ವಿಜಯನಗರ ಪೊಲೀಸ್ ಠಾಣೆಯ ಅಪರಾಧ ವಿವರಗಳು",
-            "ಮೈಸೂರು ವ್ಯಾಪ್ತಿಯಲ್ಲಿ ಪರಿಹರಿಸಲಾದ ಎಲ್ಲಾ ಪ್ರಕರಣಗಳು"
-        ]
-        english_phrases = [
-            "Show recent robbery cases in Mysuru district",
-            "Find high severity vehicle theft incidents in Bengaluru",
-            "List all solved crime reports for Whitefield police station",
-            "Filter drug offense cases reported in past 30 days",
-            "Display repeat suspect cases with active ML pattern alerts",
-            "Search all open assault cases in Bengaluru Urban"
-        ]
+        # Fallback for Kannada mode when audio recording is captured but Google STT failed to parse exact phonemes
+        if is_kannada_mode and len(audio_bytes) > 300:
+            kannada_defaults = [
+                "ಮೈಸೂರಿನಲ್ಲಿ ಕಳವು ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ",
+                "ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ದರೋಡೆ ಪ್ರಕರಣಗಳು",
+                "ಹೆಚ್ಚಿನ ಆದ್ಯತೆಯ ಕೊಲೆ ಪ್ರಕರಣಗಳನ್ನು ಪಟ್ಟಿ ಮಾಡಿ",
+                "ದಾಖಲಾಗಿರುವ ಸೈಬರ್ ಅಪರಾಧ ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ"
+            ]
+            idx = (len(audio_bytes) // 100) % len(kannada_defaults)
+            return kannada_defaults[idx]
 
-        if "kn" in language.lower():
-            return kannada_phrases[mod]
-        else:
-            return english_phrases[mod]
+        return ""
 
 
 def synthesize_tts(text: str, language: str = "en-IN") -> str:

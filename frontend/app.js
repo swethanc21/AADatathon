@@ -16,7 +16,6 @@ let visNetworkInstance = null;
 
 let masterCrimesData = [];
 let currentAlertsData = [];
-let conversationHistory = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     initIcons();
@@ -777,10 +776,12 @@ function initAIAssistant() {
         });
     });
 
-    sendBtn.addEventListener("click", () => {
-        const q = chatInput.value.trim();
-        if (q) sendAIQuery(q);
-    });
+    if (sendBtn) {
+        sendBtn.addEventListener("click", () => {
+            const q = chatInput.value.trim();
+            if (q) sendAIQuery(q);
+        });
+    }
 
     chatInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
@@ -789,148 +790,213 @@ function initAIAssistant() {
         }
     });
 
-    // Native Web Speech API Engine with IndicWav2Vec ASR Fallback
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    // Native 16-bit PCM WAV Audio Recording & Speech Transcription Engine
     let isRecording = false;
+    let micStream = null;
+    let audioCtx = null;
+    let micSource = null;
+    let scriptProc = null;
+    let rawPcmSamples = [];
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition = null;
     let finalTranscript = "";
 
     if (SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
+        try {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
 
-        recognition.onstart = () => {
-            isRecording = true;
-            voiceBtn.classList.add("recording");
-            finalTranscript = "";
-            chatInput.value = "";
-            const isKn = activeVoiceLang === "kn-IN" || (btnKn && btnKn.classList.contains("active"));
-            const langName = isKn ? "Kannada (ಕನ್ನಡ - kn-IN)" : "English (en-IN)";
-            chatInput.placeholder = `Listening continuously... Speak in ${langName}... Click Mic to finish & search.`;
-        };
-
-        recognition.onresult = (event) => {
-            let interimTranscript = "";
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript + " ";
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-            }
-            chatInput.value = (finalTranscript + interimTranscript).trim();
-        };
-
-        recognition.onend = () => {
-            isRecording = false;
-            voiceBtn.classList.remove("recording");
-            chatInput.placeholder = "Ask a crime question in English or Kannada...";
-        };
-
-        recognition.onerror = (event) => {
-            console.warn("Web Speech API notice:", event.error);
-            isRecording = false;
-            voiceBtn.classList.remove("recording");
-            chatInput.placeholder = "Ask a crime question in English or Kannada...";
-        };
-
-        voiceBtn.addEventListener("click", () => {
-            if (!isRecording) {
+            recognition.onstart = () => {
+                isRecording = true;
+                voiceBtn.classList.add("recording");
+                chatInput.value = "";
+                finalTranscript = "";
                 const isKn = (btnKn && btnKn.classList.contains("active")) || activeVoiceLang === "kn-IN";
-                activeVoiceLang = isKn ? "kn-IN" : "en-IN";
-                recognition.lang = activeVoiceLang;
-                try {
-                    recognition.start();
-                } catch (e) {
-                    console.error("Recognition start error:", e);
-                    isRecording = false;
-                    voiceBtn.classList.remove("recording");
+                chatInput.placeholder = isKn ? "🎙️ ಧ್ವನಿ ರೆಕಾರ್ಡ್ ಆಗುತ್ತಿದೆ... ಕನ್ನಡದಲ್ಲಿ ಮಾತನಾಡಿ... (ಮುಗಿಸಲು ಮೈಕ್ ಕ್ಲಿಕ್ ಮಾಡಿ)" : "🎙️ Listening... Speak your question in English... (Click Mic when done)";
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = "";
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript + " ";
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
                 }
-            } else {
-                try {
-                    recognition.stop();
-                } catch (e) {}
+                const fullText = (finalTranscript + interimTranscript).trim();
+                if (fullText) {
+                    chatInput.value = fullText;
+                }
+            };
+
+            recognition.onend = () => {
                 isRecording = false;
                 voiceBtn.classList.remove("recording");
+                chatInput.placeholder = "Ask a crime question in English or Kannada...";
                 const text = chatInput.value.trim();
                 if (text) {
                     sendAIQuery(text);
                 }
-            }
-        });
-    } else {
-        // MediaRecorder Fallback
-        let mediaRecorder = null;
-        let audioChunks = [];
+            };
 
-        voiceBtn.addEventListener("click", async () => {
-            if (!isRecording) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream);
-                    audioChunks = [];
-
-                    mediaRecorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) audioChunks.push(event.data);
-                    };
-
-                    mediaRecorder.onstop = async () => {
-                        voiceBtn.classList.remove("recording");
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                        const formData = new FormData();
-                        formData.append("file", audioBlob, "user_voice.wav");
-
-                        const activeLangBtn = document.querySelector(".lang-btn.active");
-                        const langCode = activeLangBtn && activeLangBtn.id === "btn-lang-kn" ? "kn-IN" : "en-IN";
-
-                        chatInput.placeholder = "Transcribing with AI4Bharat IndicWav2Vec ASR Engine...";
-                        try {
-                            const res = await fetch(`/api/ai/transcribe?language=${langCode}`, {
-                                method: "POST",
-                                body: formData
-                            });
-                            const json = await res.json();
-                            if (json.transcribed_text) {
-                                chatInput.value = json.transcribed_text;
-                                sendAIQuery(json.transcribed_text);
-                            }
-                        } catch (err) {
-                            console.error("IndicWav2Vec error:", err);
-                        } finally {
-                            chatInput.placeholder = "Ask a crime question in English or Kannada...";
-                        }
-                    };
-
-                    mediaRecorder.start(250);
-                    isRecording = true;
-                    voiceBtn.classList.add("recording");
-                } catch (err) {
-                    console.warn("Mic access fallback:", err);
-                    voiceBtn.classList.add("recording");
-                    chatInput.placeholder = "Transcribing speech via IndicWav2Vec Engine...";
-                    setTimeout(async () => {
-                        voiceBtn.classList.remove("recording");
-                        const activeLangBtn = document.querySelector(".lang-btn.active");
-                        const langCode = activeLangBtn && activeLangBtn.id === "btn-lang-kn" ? "kn-IN" : "en-IN";
-                        const formData = new FormData();
-                        formData.append("file", new Blob(["indic_wave_sample_data"], { type: 'audio/wav' }), "sample.wav");
-                        const res = await fetch(`/api/ai/transcribe?language=${langCode}`, { method: "POST", body: formData });
-                        const json = await res.json();
-                        if (json.transcribed_text) {
-                            chatInput.value = json.transcribed_text;
-                            sendAIQuery(json.transcribed_text);
-                        }
-                        chatInput.placeholder = "Ask a crime question in English or Kannada...";
-                    }, 1000);
-                }
-            } else {
-                if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
-                isRecording = false;
-                voiceBtn.classList.remove("recording");
-            }
-        });
+            recognition.onerror = (event) => {
+                console.warn("Web Speech API notice:", event.error);
+                // On SpeechRecognition error, rely on AudioContext PCM WAV recorder
+            };
+        } catch (e) {
+            console.warn("SpeechRecognition init note:", e);
+        }
     }
+
+    function createPcmWavBlob(samples, sampleRate) {
+        const buffer = new ArrayBuffer(44 + samples.length * 2);
+        const view = new DataView(buffer);
+
+        function writeString(offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + samples.length * 2, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); // PCM
+        view.setUint16(22, 1, true); // Mono
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, samples.length * 2, true);
+
+        let offset = 44;
+        for (let i = 0; i < samples.length; i++, offset += 2) {
+            const s = Math.max(-1, Math.min(1, samples[i]));
+            view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        }
+
+        return new Blob([view], { type: 'audio/wav' });
+    }
+
+    async function sendPcmWavAudioForTranscription() {
+        if (rawPcmSamples.length === 0) return;
+
+        let totalLength = 0;
+        for (let i = 0; i < rawPcmSamples.length; i++) {
+            totalLength += rawPcmSamples[i].length;
+        }
+
+        const merged = new Float32Array(totalLength);
+        let offset = 0;
+        for (let i = 0; i < rawPcmSamples.length; i++) {
+            merged.set(rawPcmSamples[i], offset);
+            offset += rawPcmSamples[i].length;
+        }
+
+        const wavBlob = createPcmWavBlob(merged, 16000);
+        const formData = new FormData();
+        formData.append("file", wavBlob, "speech.wav");
+
+        chatInput.placeholder = "Transcribing voice speech...";
+        try {
+            const res = await fetch(`/api/ai/transcribe?language=${activeVoiceLang}`, {
+                method: "POST",
+                body: formData
+            });
+            const json = await res.json();
+            if (json.transcribed_text && json.transcribed_text.trim()) {
+                chatInput.value = json.transcribed_text.trim();
+                sendAIQuery(json.transcribed_text.trim());
+            } else {
+                chatInput.placeholder = "Speech not recognized. Please speak clearly into the mic.";
+            }
+        } catch (err) {
+            console.error("Transcription error:", err);
+            chatInput.placeholder = "Ask a crime question in English or Kannada...";
+        }
+    }
+
+    voiceBtn.addEventListener("click", async () => {
+        if (!isRecording) {
+            const isKn = (btnKn && btnKn.classList.contains("active")) || activeVoiceLang === "kn-IN";
+            activeVoiceLang = isKn ? "kn-IN" : "en-IN";
+
+            // Request microphone access
+            try {
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (err) {
+                console.warn("Mic access permission error:", err);
+                chatInput.placeholder = "Microphone access denied. Please allow mic in browser settings.";
+                return;
+            }
+
+            isRecording = true;
+            voiceBtn.classList.add("recording");
+            chatInput.value = "";
+            chatInput.placeholder = isKn ? "🎙️ ಧ್ವನಿ ರೆಕಾರ್ಡ್ ಆಗುತ್ತಿದೆ... ಮಾತನಾಡಿ..." : "🎙️ Recording audio... Speak your question now...";
+
+            // Start AudioContext 16kHz PCM Sampler
+            try {
+                rawPcmSamples = [];
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                micSource = audioCtx.createMediaStreamSource(micStream);
+                scriptProc = audioCtx.createScriptProcessor(4096, 1, 1);
+
+                scriptProc.onaudioprocess = (e) => {
+                    if (!isRecording) return;
+                    const inputData = e.inputBuffer.getChannelData(0);
+                    rawPcmSamples.push(new Float32Array(inputData));
+                };
+
+                micSource.connect(scriptProc);
+                scriptProc.connect(audioCtx.destination);
+            } catch (e) {
+                console.warn("AudioContext setup note:", e);
+            }
+
+            // Also trigger Web Speech API simultaneously if supported
+            if (recognition) {
+                recognition.lang = activeVoiceLang;
+                try {
+                    recognition.start();
+                } catch (e) {}
+            }
+        } else {
+            // Stop Recording
+            isRecording = false;
+            voiceBtn.classList.remove("recording");
+
+            if (recognition) {
+                try { recognition.stop(); } catch (e) {}
+            }
+
+            if (scriptProc) {
+                try { scriptProc.disconnect(); } catch (e) {}
+            }
+            if (micSource) {
+                try { micSource.disconnect(); } catch (e) {}
+            }
+            if (micStream) {
+                try { micStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+            }
+            if (audioCtx) {
+                try { audioCtx.close(); } catch (e) {}
+            }
+
+            const currentVal = chatInput.value.trim();
+            if (currentVal) {
+                sendAIQuery(currentVal);
+            } else {
+                // If WebSpeech did not capture text, send PCM WAV Blob to backend!
+                sendPcmWavAudioForTranscription();
+            }
+        }
+    });
 
     const loadGraphBtn = document.getElementById("load-graph-btn");
     if (loadGraphBtn) loadGraphBtn.addEventListener("click", loadNetworkGraph);
@@ -1087,8 +1153,7 @@ async function sendAIQuery(questionText) {
     const q = questionText.trim();
     
     // Clear input field
-    const chatInputEl = document.getElementById("ai-chat-input");
-    if (chatInputEl) chatInputEl.value = "";
+    document.getElementById("ai-chat-input").value = "";
 
     // 1. Append User Message Bubble to Thread
     appendUserChatMessage(q);
@@ -1100,20 +1165,6 @@ async function sendAIQuery(questionText) {
             body: JSON.stringify({ question: q })
         });
         const data = await res.json();
-
-        // Store in conversation history for PDF export
-        conversationHistory.push({
-            timestamp: new Date().toLocaleString(),
-            question: q,
-            narrative_en: data.narrative_english || '',
-            narrative_kn: data.narrative_kannada || '',
-            insight_en: data.companion_insight_english || '',
-            insight_kn: data.companion_insight_kannada || '',
-            sql: data.generated_sql || '',
-            result_count: data.result_count || 0,
-            records: (data.records || []).slice(0, 20),
-            stats: data.stats || {}
-        });
 
         // 2. Append AI Bot Message Bubble to Thread
         appendBotChatMessage(data);
@@ -1204,92 +1255,125 @@ async function loadNetworkGraph() {
 }
 
 function exportConversationPDF() {
-    if (conversationHistory.length === 0) {
-        alert('No conversation data to export. Ask a question first, then click PDF Report.');
+    const threadEl = document.getElementById("ai-chat-thread");
+    const messages = [];
+    if (threadEl) {
+        threadEl.querySelectorAll(".chat-message").forEach(msg => {
+            const isUser = msg.classList.contains("user-message");
+            const sender = isUser ? "Investigating Officer" : "KSP Police Companion AI";
+            const textEl = msg.querySelector(".message-text");
+            const text = textEl ? textEl.innerText : "";
+            const sqlEl = msg.querySelector(".chat-sql-snippet");
+            const sql = sqlEl ? sqlEl.innerText : "";
+            messages.push({ isUser, sender, text, sql });
+        });
+    }
+
+    const queryTag = document.getElementById("intel-query-tag")?.innerText || "Statewide Search";
+    const totalCrimes = document.getElementById("intel-total-crimes")?.innerText || "0";
+    const activeCrimes = document.getElementById("intel-active-crimes")?.innerText || "0";
+    const solvedCrimes = document.getElementById("intel-solved-crimes")?.innerText || "0";
+    const totalLoss = document.getElementById("intel-total-loss")?.innerText || "₹0";
+    const hintText = document.getElementById("intel-hint-text")?.innerText || "No tactical hints logged.";
+    
+    const suspects = Array.from(document.querySelectorAll("#intel-suspects-tags .tag-pill")).map(t => t.innerText).join(", ");
+    const moList = Array.from(document.querySelectorAll("#intel-mo-tags .tag-pill")).map(t => t.innerText).join(", ");
+
+    const locations = [];
+    document.querySelectorAll("#intel-locations-list .loc-item-row").forEach(row => {
+        locations.push(row.innerText);
+    });
+
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+        alert("Popup blocked! Please allow popups for this site to view and download the PDF report.");
         return;
     }
 
-    // Build conversation sections HTML
-    var conversationSections = '';
-    conversationHistory.forEach(function(entry, idx) {
-        var recordRows = (entry.records || []).map(function(r) {
-            return '<tr>' +
-                '<td>' + (r.case_id || '--') + '</td>' +
-                '<td>' + (r.crime_type || '--') + '</td>' +
-                '<td>' + (r.division || '--') + '</td>' +
-                '<td>' + (r.severity || '--') + '</td>' +
-                '<td>' + (r.status || '--') + '</td>' +
-                '<td>' + (r.suspect_name || 'Unknown') + '</td>' +
-                '</tr>';
-        }).join('');
+    printWin.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>KSP Police Intelligence Audit & Briefing Report</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #0f172a; line-height: 1.6; background: #fff; }
+                .header { border-bottom: 3px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+                .header h1 { color: #1e3a8a; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; }
+                .header p { color: #64748b; margin: 4px 0 0 0; font-size: 13px; }
+                .badge { background: #1e3a8a; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+                .grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+                .kpi-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; text-align: center; }
+                .kpi-box .lbl { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; }
+                .kpi-box .val { font-size: 18px; color: #1e3a8a; font-weight: 800; margin-top: 4px; }
+                .section { background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 18px; }
+                .section h3 { margin-top: 0; color: #1e3a8a; font-size: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; font-weight: 700; }
+                .msg-box { margin-bottom: 12px; padding: 12px; border-radius: 8px; font-size: 13px; }
+                .msg-box.user { background: #eff6ff; border-left: 4px solid #2563eb; }
+                .msg-box.bot { background: #f8fafc; border-left: 4px solid #059669; }
+                .msg-sender { font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; }
+                .sql-box { background: #0f172a; color: #38bdf8; font-family: monospace; padding: 8px 12px; border-radius: 6px; font-size: 11px; margin-top: 6px; word-break: break-all; }
+                .hint-box { background: #fffbeb; border-left: 4px solid #d97706; padding: 12px; font-size: 13px; color: #78350f; border-radius: 6px; font-weight: 500; }
+                .footer { margin-top: 30px; font-size: 11px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+                ul { margin: 6px 0; padding-left: 20px; font-size: 13px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div>
+                    <h1>KARNATAKA STATE POLICE</h1>
+                    <p>Official Crime Intelligence & Field Investigation Briefing Report</p>
+                    <p><strong>Query Context:</strong> ${queryTag} | <strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+                </div>
+                <span class="badge">CONFIDENTIAL</span>
+            </div>
 
-        var stats = entry.stats || {};
-        var locBreakdown = (stats.top_locations || []).map(function(loc) {
-            return '<li>' + loc.location + ': <strong>' + loc.count + ' cases</strong></li>';
-        }).join('');
+            <div class="grid">
+                <div class="kpi-box"><div class="lbl">Total Crimes</div><div class="val">${totalCrimes}</div></div>
+                <div class="kpi-box"><div class="lbl">Active / Open</div><div class="val" style="color:#dc2626;">${activeCrimes}</div></div>
+                <div class="kpi-box"><div class="lbl">Solved / Closed</div><div class="val" style="color:#16a34a;">${solvedCrimes}</div></div>
+                <div class="kpi-box"><div class="lbl">Financial Loss</div><div class="val">${totalLoss}</div></div>
+            </div>
 
-        conversationSections += '<div class="exchange">' +
-            '<h3>Exchange ' + (idx + 1) + ' &mdash; ' + entry.timestamp + '</h3>' +
-            '<div class="section"><h4>Investigator Query</h4><p class="query-text">' + entry.question + '</p></div>' +
-            '<div class="section"><h4>AI Response (English)</h4><p>' + entry.narrative_en + '</p>' +
-            (entry.narrative_kn ? '<p style="color:#1e1b4b;font-weight:600;">' + entry.narrative_kn + '</p>' : '') +
-            '</div>' +
-            (entry.insight_en ? '<div class="insight-badge"><strong>Tactical Insight:</strong> ' + entry.insight_en + '</div>' : '') +
-            (entry.sql ? '<div class="section"><h4>Generated SQL</h4><div class="sql-box">' + entry.sql + '</div></div>' : '') +
-            '<div class="section"><h4>Statistics</h4>' +
-            '<p>Total Results: <strong>' + entry.result_count + '</strong>' +
-            (stats.active_cases !== undefined ? ' | Active: <strong>' + stats.active_cases + '</strong>' : '') +
-            (stats.solved_cases !== undefined ? ' | Solved: <strong>' + stats.solved_cases + '</strong>' : '') +
-            (stats.total_loss ? ' | Loss: <strong>&#8377;' + Math.round(stats.total_loss).toLocaleString() + '</strong>' : '') +
-            '</p>' +
-            (locBreakdown ? '<h4>Location Breakdown</h4><ul>' + locBreakdown + '</ul>' : '') +
-            '</div>' +
-            (recordRows ? '<div class="section"><h4>Records (' + entry.records.length + ')</h4>' +
-            '<table><thead><tr><th>Case ID</th><th>Crime</th><th>Division</th><th>Severity</th><th>Status</th><th>Suspect</th></tr></thead>' +
-            '<tbody>' + recordRows + '</tbody></table></div>' : '') +
-            '</div><hr>';
-    });
+            <div class="section">
+                <h3>1. Tactical Suspect Hints & Field Action Tips</h3>
+                <div class="hint-box">${hintText}</div>
+                <p style="font-size:12px; margin-top:8px; color:#475569;">
+                    <strong>Known Suspect Leads:</strong> ${suspects || 'None'}<br>
+                    <strong>Modus Operandi Tactics:</strong> ${moList || 'Standard MO'}
+                </p>
+            </div>
 
-    var htmlContent = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
-        '<title>KSP Police Intelligence Report</title>' +
-        '<style>' +
-        'body{font-family:"Segoe UI",Tahoma,sans-serif;padding:30px;color:#1e293b;line-height:1.6}' +
-        '.header{border-bottom:3px solid #1e3a8a;padding-bottom:15px;margin-bottom:25px}' +
-        '.header h1{color:#1e3a8a;margin:0;font-size:22px}' +
-        '.header p{color:#64748b;margin:5px 0 0;font-size:13px}' +
-        '.exchange{margin-bottom:30px}' +
-        '.exchange h3{color:#0f172a;font-size:16px;background:#f1f5f9;padding:8px 12px;border-radius:6px}' +
-        '.section{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:14px}' +
-        '.section h4{margin:0 0 8px;color:#334155;font-size:14px}' +
-        '.query-text{font-size:15px;font-weight:700;color:#1e40af}' +
-        '.sql-box{background:#0f172a;color:#38bdf8;font-family:monospace;padding:10px;border-radius:6px;font-size:12px;word-break:break-all}' +
-        '.insight-badge{background:#eff6ff;border-left:4px solid #2563eb;padding:10px;color:#1e40af;font-weight:600;margin-bottom:14px;border-radius:4px}' +
-        'table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}' +
-        'th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}' +
-        'th{background:#f1f5f9;color:#334155;font-weight:700}' +
-        'hr{border:none;border-top:1px dashed #cbd5e1;margin:24px 0}' +
-        '.footer{margin-top:40px;font-size:11px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:12px}' +
-        'ul{padding-left:20px}' +
-        '</style></head><body>' +
-        '<div class="header">' +
-        '<h1>KARNATAKA STATE POLICE &mdash; CRIME INTELLIGENCE REPORT</h1>' +
-        '<p>Official AI-Assisted Investigation Briefing &amp; Audit Trail</p>' +
-        '<p><strong>Generated:</strong> ' + new Date().toLocaleString() + ' | <strong>Total Exchanges:</strong> ' + conversationHistory.length + '</p>' +
-        '</div>' +
-        conversationSections +
-        '<div class="footer">Confidential &mdash; Karnataka State Police Command Network &mdash; AI Audit Trail Logged</div>' +
-        '</body></html>';
+            ${locations.length > 0 ? `
+            <div class="section">
+                <h3>2. Crime Location Breakdown</h3>
+                <ul>
+                    ${locations.map(l => `<li>${l}</li>`).join('')}
+                </ul>
+            </div>
+            ` : ''}
 
-    // Direct file download using Blob (bypasses popup blockers)
-    var blob = new Blob([htmlContent], { type: 'text/html' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'KSP_Intelligence_Report_' + new Date().toISOString().slice(0, 10) + '.html';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+            <div class="section">
+                <h3>3. Conversational AI Audit Trail (${messages.length} Messages)</h3>
+                ${messages.map(m => `
+                    <div class="msg-box ${m.isUser ? 'user' : 'bot'}">
+                        <div class="msg-sender">${m.sender}</div>
+                        <div>${m.text}</div>
+                        ${m.sql ? `<div class="sql-box">${m.sql}</div>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+
+            <div class="footer">
+                Karnataka State Police Command Network - Field Report Logged - Confidential
+            </div>
+
+            <script>
+                window.onload = function() { window.print(); }
+            </script>
+        </body>
+        </html>
+    `);
+    printWin.document.close();
 }
 
 /* Global Multi-Field Search Engine */

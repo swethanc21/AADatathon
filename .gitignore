@@ -1,8 +1,7 @@
 __pycache__/
 *.pyc
-.env
-.venv/
-env/
-venv/
+*.pyo
 *.log
-scratch/
+.gemini/
+.vscode/
+.idea/

@@ -36,20 +36,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-
-class NoCacheMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-        if request.url.path.startswith("/static/"):
-            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-            response.headers["Pragma"] = "no-cache"
-            response.headers["Expires"] = "0"
-        return response
-
-app.add_middleware(NoCacheMiddleware)
-
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -448,11 +434,7 @@ def serve_index():
     index_file = os.path.join(frontend_path, "index.html")
     if os.path.exists(index_file):
         with open(index_file, "r", encoding="utf-8") as f:
-            content = f.read()
-        return HTMLResponse(
-            content=content,
-            headers={"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache"}
-        )
+            return HTMLResponse(content=f.read())
     return HTMLResponse("<h2>KSP Crime Analytics Hub Backend Operational</h2>")
 
 if __name__ == "__main__":
@@ -461,8 +443,5 @@ if __name__ == "__main__":
     print(" KSP Intelligent Crime Analytics & Field Reporting Platform ")
     print(" Server launching on http://127.0.0.1:8000 ")
     print("===============================================================")
-    try:
-        os.system("start chrome http://127.0.0.1:8000")
-    except Exception:
-        webbrowser.open("http://127.0.0.1:8000")
+    webbrowser.open("http://127.0.0.1:8000")
     uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
