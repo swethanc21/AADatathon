@@ -48,7 +48,13 @@ function initClock() {
     setInterval(updateClock, 1000);
 }
 
+let tabHistory = ["landing-view"];
+
 function switchToTab(targetTab) {
+    if (tabHistory[tabHistory.length - 1] !== targetTab) {
+        tabHistory.push(targetTab);
+    }
+
     const navButtons = document.querySelectorAll(".nav-btn, .mobile-bottom-nav .nav-btn");
     const viewPanels = document.querySelectorAll(".view-panel");
 
@@ -66,6 +72,16 @@ function switchToTab(targetTab) {
         setTimeout(() => pickerMap.invalidateSize(), 200);
     } else if (targetTab === "ai-view") {
         loadNetworkGraph();
+    }
+}
+
+function goBack() {
+    if (tabHistory.length > 1) {
+        tabHistory.pop();
+        const prevTab = tabHistory[tabHistory.length - 1];
+        switchToTab(prevTab);
+    } else {
+        switchToTab("landing-view");
     }
 }
 

@@ -5,11 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Karnataka State Police | Crime Analytics & Field Command Platform</title>
     
-    <!-- Google Fonts: Poppins -->
+    <!-- Google Fonts: Poppins & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
     
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Poppins', 'Outfit', 'system-ui', 'sans-serif'],
+              display: ['Outfit', 'Poppins', 'sans-serif'],
+            },
+            colors: {
+              ksp: {
+                indigo: '#4f46e5',
+                'indigo-dark': '#4338ca',
+                purple: '#7c3aed',
+                blue: '#0284c7',
+                emerald: '#10b981',
+                amber: '#f59e0b',
+                rose: '#ef4444',
+                bg: '#f8fafc',
+              }
+            }
+          }
+        }
+      }
+    </script>
+
     <!-- Leaflet CSS & Heatmap -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -26,171 +53,194 @@
 
     <link rel="stylesheet" href="/static/styles.css">
 </head>
-<body class="ksp-theme">
+<body class="ksp-theme bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col overflow-x-hidden antialiased">
 
     <!-- Top Command Center Navigation -->
-    <header class="app-header">
-        <div class="header-brand">
-            <div class="ksp-emblem">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+    <header class="app-header h-18 bg-white border-b border-slate-200/90 flex items-center justify-between px-4 md:px-6 shadow-sm sticky top-0 z-50 gap-3">
+        <div class="header-brand flex items-center gap-3 flex-shrink-0">
+            <div class="ksp-emblem w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-xs">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
                     <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
                     <path d="M12 8v8M8 12h8"/>
                 </svg>
             </div>
-            <div class="brand-title">
-                <h1>KARNATAKA STATE POLICE</h1>
-                <span class="sub-title">Intelligent Crime Analytics & Field Command Platform</span>
+            <div class="brand-title hidden sm:block">
+                <h1 class="text-sm md:text-base font-extrabold tracking-tight text-slate-900 leading-tight">KARNATAKA STATE POLICE</h1>
+                <span class="sub-title text-[11px] text-slate-500 font-medium block">Intelligent Crime Analytics & Field Command Platform</span>
             </div>
         </div>
 
         <!-- Global Multi-Field Dataset Search Bar -->
-        <div class="global-search-wrapper">
-            <div class="search-input-box">
-                <i data-lucide="search" class="search-icon"></i>
-                <input type="text" id="global-search-input" placeholder="Search case ID, suspect, station, crime type..." autocomplete="off">
-                <button id="clear-search-btn" class="clear-btn hidden">&times;</button>
+        <div class="global-search-wrapper relative w-64 md:w-80 max-w-full">
+            <div class="search-input-box relative flex items-center bg-slate-100/90 border border-slate-200 rounded-xl px-3 py-1.5 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 focus-within:bg-white transition-all">
+                <i data-lucide="search" class="search-icon w-4 h-4 text-slate-400 mr-2 flex-shrink-0"></i>
+                <input type="text" id="global-search-input" class="w-full bg-transparent border-none outline-none text-xs text-slate-800 placeholder-slate-400 font-medium" placeholder="Search case ID, suspect, station..." autocomplete="off">
+                <button id="clear-search-btn" class="clear-btn hidden text-slate-400 hover:text-slate-600 text-sm font-bold ml-1">&times;</button>
             </div>
-            <div id="global-search-suggestions" class="search-suggestions-dropdown hidden"></div>
+            <div id="global-search-suggestions" class="search-suggestions-dropdown absolute left-0 right-0 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden hidden max-h-80 overflow-y-auto"></div>
         </div>
 
         <!-- Desktop Navigation Tabs -->
-        <nav class="nav-tabs">
-            <button class="nav-btn active" data-tab="landing-view">
-                <i data-lucide="home"></i> Home
+        <nav class="nav-tabs hidden lg:flex items-center gap-1 bg-slate-100/80 p-1.5 rounded-xl border border-slate-200/70">
+            <button class="nav-btn active flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-all cursor-pointer" data-tab="landing-view">
+                <i data-lucide="home" class="w-3.5 h-3.5"></i> Home
             </button>
-            <button class="nav-btn" data-tab="map-view">
-                <i data-lucide="map"></i> Map Tracking
+            <button class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-all cursor-pointer" data-tab="map-view">
+                <i data-lucide="map" class="w-3.5 h-3.5"></i> Map Tracking
             </button>
-            <button class="nav-btn" data-tab="analytics-view">
-                <i data-lucide="bar-chart-3"></i> 3-Yr Trends
+            <button class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-all cursor-pointer" data-tab="analytics-view">
+                <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> 3-Yr Trends
             </button>
-            <button class="nav-btn" data-tab="reporting-view">
-                <i data-lucide="file-plus"></i> Field Reporting
+            <button class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-all cursor-pointer" data-tab="reporting-view">
+                <i data-lucide="file-plus" class="w-3.5 h-3.5"></i> Field Reporting
             </button>
-            <button class="nav-btn" data-tab="resolution-view">
-                <i data-lucide="check-circle-2"></i> Resolution
+            <button class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-all cursor-pointer" data-tab="resolution-view">
+                <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Resolution
             </button>
-            <button class="nav-btn" data-tab="alerts-view">
-                <i data-lucide="bell"></i> ML Alerts <span id="alert-badge-count" class="badge-pill">0</span>
+            <button class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-all cursor-pointer" data-tab="alerts-view">
+                <i data-lucide="bell" class="w-3.5 h-3.5"></i> ML Alerts <span id="alert-badge-count" class="badge-pill bg-rose-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">0</span>
             </button>
-            <button class="nav-btn" data-tab="ai-view">
-                <i data-lucide="bot"></i> AI Assistant
+            <button class="nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-all cursor-pointer" data-tab="ai-view">
+                <i data-lucide="bot" class="w-3.5 h-3.5"></i> AI Assistant
             </button>
         </nav>
 
         <!-- Header Controls -->
-        <div class="header-actions">
-            <div class="role-selector">
-                <i data-lucide="shield"></i>
-                <select id="user-role-select">
+        <div class="header-actions flex items-center gap-3 flex-shrink-0">
+            <div class="role-selector hidden sm:flex items-center gap-1.5 bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 font-medium">
+                <i data-lucide="shield" class="w-3.5 h-3.5 text-indigo-600"></i>
+                <select id="user-role-select" class="bg-transparent outline-none cursor-pointer text-xs font-semibold text-slate-700">
                     <option value="Officer">Role: Field Officer</option>
                     <option value="Investigator" selected>Role: Investigator</option>
                     <option value="Admin">Role: Admin Command</option>
                 </select>
             </div>
-            <div class="live-clock" id="clock-display">12:00:00 PM</div>
+            <div class="live-clock hidden md:block text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100/90 px-3 py-1.5 rounded-xl shadow-2xs" id="clock-display">12:00:00 PM</div>
         </div>
     </header>
 
     <!-- Main Workspace Container -->
-    <main class="main-content">
+    <main class="main-content max-w-7xl mx-auto p-4 md:p-6 w-full flex-1">
 
-        <!-- MODULE 0: MODERN LANDING PAGE (POPPINS TYPOGRAPHY) -->
+        <!-- MODULE 0: MODERN LANDING PAGE -->
         <section id="landing-view" class="view-panel active">
-            <div class="landing-hero-container">
-                <div class="hero-glow-bg"></div>
+            <div class="landing-hero-container relative bg-white border border-slate-200/80 rounded-2xl p-6 md:p-10 shadow-sm overflow-hidden mb-6">
+                <div class="hero-glow-bg absolute -right-20 -top-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
                 <!-- Hero Section Header -->
-                <div class="hero-content">
-                    <span class="hero-pill-tag"><i data-lucide="sparkles"></i> NEXT-GEN POLICE INTELLIGENCE PLATFORM</span>
-                    <h1 class="hero-title">
-                        Analyze, Track & Prevent Crime, <span class="text-gradient-emerald">Instantly.</span>
+                <div class="hero-content relative z-10">
+                    <span class="hero-pill-tag inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-4 shadow-2xs">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-600"></i> NEXT-GEN POLICE INTELLIGENCE PLATFORM
+                    </span>
+                    <h1 class="hero-title text-2xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight mb-4">
+                        Analyze, Track & Prevent Crime, <span class="text-gradient-emerald bg-gradient-to-r from-emerald-600 via-teal-500 to-indigo-600 bg-clip-text text-transparent">Instantly.</span>
                     </h1>
-                    <p class="hero-subtitle">
+                    <p class="hero-subtitle text-slate-600 text-sm md:text-base leading-relaxed max-w-3xl mb-6 font-normal">
                         Powering law enforcement across Karnataka with AI pattern recognition, DBSCAN spatial hotspotting, AI4Bharat IndicWav2Vec voice transcription, and live suspect route tracking.
                     </p>
 
-                    <div class="hero-cta-group">
-                        <button class="btn-hero-primary" onclick="switchToTab('map-view')">
-                            <i data-lucide="map-pin"></i> Launch Map Command Center &rarr;
+                    <div class="hero-cta-group flex flex-wrap items-center gap-3 md:gap-4 mb-8">
+                        <button class="btn-hero-primary inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs md:text-sm font-bold shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all cursor-pointer active:scale-95" onclick="switchToTab('map-view')">
+                            <i data-lucide="map-pin" class="w-4 h-4"></i> Launch Map Command Center &rarr;
                         </button>
-                        <button class="btn-hero-secondary" onclick="switchToTab('analytics-view')">
-                            <i data-lucide="bar-chart-2"></i> Explore 3-Year Crime Trends
+                        <button class="btn-hero-secondary inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs md:text-sm font-semibold border border-slate-200 transition-all cursor-pointer active:scale-95" onclick="switchToTab('analytics-view')">
+                            <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-600"></i> Explore 3-Year Crime Trends
                         </button>
                     </div>
 
                     <!-- Platform Metrics Banner -->
-                    <div class="platform-metrics-row">
-                        <div class="metric-item">
-                            <h3>1,500+</h3>
-                            <span>Master Crime Records</span>
+                    <div class="platform-metrics-row grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-50/90 border border-slate-200/80">
+                        <div class="metric-item text-center">
+                            <h3 class="text-xl md:text-2xl font-extrabold text-slate-900">1,500+</h3>
+                            <span class="text-xs text-slate-500 font-medium">Master Crime Records</span>
                         </div>
-                        <div class="metric-divider"></div>
-                        <div class="metric-item">
-                            <h3>30+</h3>
-                            <span>District Divisions</span>
+                        <div class="metric-item text-center">
+                            <h3 class="text-xl md:text-2xl font-extrabold text-slate-900">30+</h3>
+                            <span class="text-xs text-slate-500 font-medium">District Divisions</span>
                         </div>
-                        <div class="metric-divider"></div>
-                        <div class="metric-item">
-                            <h3>99.4%</h3>
-                            <span>Search Lookup Accuracy</span>
+                        <div class="metric-item text-center">
+                            <h3 class="text-xl md:text-2xl font-extrabold text-slate-900">99.4%</h3>
+                            <span class="text-xs text-slate-500 font-medium">Search Lookup Accuracy</span>
                         </div>
-                        <div class="metric-divider"></div>
-                        <div class="metric-item">
-                            <h3>Real-Time</h3>
-                            <span>ML Pattern Alerts</span>
+                        <div class="metric-item text-center">
+                            <h3 class="text-xl md:text-2xl font-extrabold text-slate-900">Real-Time</h3>
+                            <span class="text-xs text-slate-500 font-medium">ML Pattern Alerts</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Features Showcase Grid -->
-                <div class="features-section">
-                    <div class="section-heading">
-                        <h2>Built for Law Enforcement Command</h2>
-                        <p>End-to-end intelligence suite empowering field officers, crime analysts, and station commanders.</p>
+                <div class="features-section mt-10">
+                    <div class="section-heading text-center mb-8">
+                        <h2 class="text-xl md:text-2xl font-extrabold text-slate-900">Built for Law Enforcement Command</h2>
+                        <p class="text-xs md:text-sm text-slate-500 mt-1">End-to-end intelligence suite empowering field officers, crime analysts, and station commanders.</p>
                     </div>
 
-                    <div class="features-grid">
-                        <div class="feature-card tilt-card" onclick="switchToTab('map-view')">
-                            <div class="feature-icon emerald"><i data-lucide="map"></i></div>
-                            <h3>Geospatial Suspect Tracking</h3>
-                            <p>Live Leaflet vector mapping with custom suspect photo markers, waypoint vectors, and blue dashed route tracking paths.</p>
-                            <span class="card-link">Open Tracking Map &rarr;</span>
+                    <div class="features-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div class="feature-card tilt-card group bg-white border border-slate-200/90 hover:border-indigo-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between" onclick="switchToTab('map-view')">
+                            <div>
+                                <div class="feature-icon emerald w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center mb-3">
+                                    <i data-lucide="map" class="w-5 h-5"></i>
+                                </div>
+                                <h3 class="text-base font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">Geospatial Suspect Tracking</h3>
+                                <p class="text-xs text-slate-500 leading-relaxed mb-4">Live Leaflet vector mapping with custom suspect photo markers, waypoint vectors, and blue dashed route tracking paths.</p>
+                            </div>
+                            <span class="card-link text-xs font-bold text-indigo-600 group-hover:underline inline-flex items-center gap-1">Open Tracking Map &rarr;</span>
                         </div>
 
-                        <div class="feature-card tilt-card" onclick="switchToTab('analytics-view')">
-                            <div class="feature-icon gold"><i data-lucide="trending-up"></i></div>
-                            <h3>3-Year Trend Analytics</h3>
-                            <p>Monthly incident timelines, division volume bar charts, crime type doughnut distributions, and historical district tables.</p>
-                            <span class="card-link">View Analytics &rarr;</span>
+                        <div class="feature-card tilt-card group bg-white border border-slate-200/90 hover:border-indigo-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between" onclick="switchToTab('analytics-view')">
+                            <div>
+                                <div class="feature-icon gold w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center mb-3">
+                                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                                </div>
+                                <h3 class="text-base font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">3-Year Trend Analytics</h3>
+                                <p class="text-xs text-slate-500 leading-relaxed mb-4">Monthly incident timelines, division volume bar charts, crime type doughnut distributions, and historical district tables.</p>
+                            </div>
+                            <span class="card-link text-xs font-bold text-indigo-600 group-hover:underline inline-flex items-center gap-1">View Analytics &rarr;</span>
                         </div>
 
-                        <div class="feature-card tilt-card" onclick="switchToTab('reporting-view')">
-                            <div class="feature-icon blue"><i data-lucide="file-plus-2"></i></div>
-                            <h3>Field Incident Reporting</h3>
-                            <p>GPS device auto-location fix, interactive coordinate picker map, field note logger, and instant DBSCAN pattern scan.</p>
-                            <span class="card-link">Report Incident &rarr;</span>
+                        <div class="feature-card tilt-card group bg-white border border-slate-200/90 hover:border-indigo-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between" onclick="switchToTab('reporting-view')">
+                            <div>
+                                <div class="feature-icon blue w-10 h-10 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center mb-3">
+                                    <i data-lucide="file-plus-2" class="w-5 h-5"></i>
+                                </div>
+                                <h3 class="text-base font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">Field Incident Reporting</h3>
+                                <p class="text-xs text-slate-500 leading-relaxed mb-4">GPS device auto-location fix, interactive coordinate picker map, field note logger, and instant DBSCAN pattern scan.</p>
+                            </div>
+                            <span class="card-link text-xs font-bold text-indigo-600 group-hover:underline inline-flex items-center gap-1">Report Incident &rarr;</span>
                         </div>
 
-                        <div class="feature-card tilt-card" onclick="switchToTab('resolution-view')">
-                            <div class="feature-icon purple"><i data-lucide="check-circle-2"></i></div>
-                            <h3>Case Resolution Management</h3>
-                            <p>Multi-field case lookup engine with status updates, suspect confession logger, and property recovery ledger.</p>
-                            <span class="card-link">Manage Cases &rarr;</span>
+                        <div class="feature-card tilt-card group bg-white border border-slate-200/90 hover:border-indigo-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between" onclick="switchToTab('resolution-view')">
+                            <div>
+                                <div class="feature-icon purple w-10 h-10 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center mb-3">
+                                    <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                                </div>
+                                <h3 class="text-base font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">Case Resolution Management</h3>
+                                <p class="text-xs text-slate-500 leading-relaxed mb-4">Multi-field case lookup engine with status updates, suspect confession logger, and property recovery ledger.</p>
+                            </div>
+                            <span class="card-link text-xs font-bold text-indigo-600 group-hover:underline inline-flex items-center gap-1">Manage Cases &rarr;</span>
                         </div>
 
-                        <div class="feature-card tilt-card" onclick="switchToTab('alerts-view')">
-                            <div class="feature-icon red"><i data-lucide="cpu"></i></div>
-                            <h3>ML Recurrence Alerts Feed</h3>
-                            <p>Real-time spatial DBSCAN cluster detection and modus operandi (MO) pattern matching with confidence scoring.</p>
-                            <span class="card-link">Inspect Alerts &rarr;</span>
+                        <div class="feature-card tilt-card group bg-white border border-slate-200/90 hover:border-indigo-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between" onclick="switchToTab('alerts-view')">
+                            <div>
+                                <div class="feature-icon red w-10 h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center mb-3">
+                                    <i data-lucide="cpu" class="w-5 h-5"></i>
+                                </div>
+                                <h3 class="text-base font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">ML Recurrence Alerts Feed</h3>
+                                <p class="text-xs text-slate-500 leading-relaxed mb-4">Real-time spatial DBSCAN cluster detection and modus operandi (MO) pattern matching with confidence scoring.</p>
+                            </div>
+                            <span class="card-link text-xs font-bold text-indigo-600 group-hover:underline inline-flex items-center gap-1">Inspect Alerts &rarr;</span>
                         </div>
 
-                        <div class="feature-card tilt-card" onclick="switchToTab('ai-view')">
-                            <div class="feature-icon cyan"><i data-lucide="bot"></i></div>
-                            <h3>AI Natural Language Assistant</h3>
-                            <p>Text-to-SQL natural language query engine in English and Kannada with AI4Bharat IndicWav2Vec voice transcription.</p>
-                            <span class="card-link">Query AI Assistant &rarr;</span>
+                        <div class="feature-card tilt-card group bg-white border border-slate-200/90 hover:border-indigo-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between" onclick="switchToTab('ai-view')">
+                            <div>
+                                <div class="feature-icon cyan w-10 h-10 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-100 flex items-center justify-center mb-3">
+                                    <i data-lucide="bot" class="w-5 h-5"></i>
+                                </div>
+                                <h3 class="text-base font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">AI Natural Language Assistant</h3>
+                                <p class="text-xs text-slate-500 leading-relaxed mb-4">Text-to-SQL natural language query engine in English and Kannada with AI4Bharat IndicWav2Vec voice transcription.</p>
+                            </div>
+                            <span class="card-link text-xs font-bold text-indigo-600 group-hover:underline inline-flex items-center gap-1">Query AI Assistant &rarr;</span>
                         </div>
                     </div>
                 </div>
@@ -200,29 +250,39 @@
 
         <!-- MODULE 1: INTERACTIVE GEOSPATIAL MAP -->
         <section id="map-view" class="view-panel">
-            <div class="map-layout">
+            <div class="view-header flex items-center justify-between mb-4 pb-3 border-b border-slate-200/80">
+                <button onclick="goBack()" class="btn-back inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-600 text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                    <i data-lucide="arrow-left" class="w-4 h-4 text-indigo-600"></i> Back
+                </button>
+                <h2 class="text-sm md:text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="map" class="w-4 h-4 text-indigo-600"></i> Geospatial Suspect Tracking
+                </h2>
+            </div>
+            <div class="map-layout flex flex-col lg:flex-row gap-5 h-auto lg:h-[calc(100vh-160px)] min-h-[600px]">
                 <!-- Sidebar Controls -->
-                <aside class="filter-sidebar">
-                    <div class="sidebar-header">
-                        <h3><i data-lucide="sliders"></i> Crime Map Filters</h3>
-                        <button id="reset-filters-btn" class="btn-text">Reset All</button>
+                <aside class="filter-sidebar w-full lg:w-80 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs overflow-y-auto flex flex-col gap-4 flex-shrink-0">
+                    <div class="sidebar-header flex items-center justify-between pb-3 border-b border-slate-100">
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="sliders" class="w-4 h-4 text-indigo-600"></i> Crime Map Filters
+                        </h3>
+                        <button id="reset-filters-btn" class="btn-text text-xs text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer border-none bg-transparent">Reset All</button>
                     </div>
 
-                    <div class="filter-group">
-                        <label>Keyword / Case Search</label>
-                        <input type="text" id="filter-keyword-search" class="form-input" placeholder="Search case ID, suspect, station...">
+                    <div class="filter-group flex flex-col gap-1">
+                        <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Keyword / Case Search</label>
+                        <input type="text" id="filter-keyword-search" class="form-input w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" placeholder="Search case ID, suspect, station...">
                     </div>
 
-                    <div class="filter-group">
-                        <label>Police Division / District</label>
-                        <select id="filter-division" class="form-select">
+                    <div class="filter-group flex flex-col gap-1">
+                        <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Police Division / District</label>
+                        <select id="filter-division" class="form-select w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all cursor-pointer">
                             <option value="All">All Divisions (Statewide)</option>
                         </select>
                     </div>
 
-                    <div class="filter-group">
-                        <label>City / District Wise Search</label>
-                        <select id="filter-city" class="form-select">
+                    <div class="filter-group flex flex-col gap-1">
+                        <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">City / District Wise Search</label>
+                        <select id="filter-city" class="form-select w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all cursor-pointer">
                             <option value="All">All Cities (Statewide)</option>
                             <option value="Bengaluru">Bengaluru</option>
                             <option value="Mysuru">Mysuru</option>
@@ -240,16 +300,16 @@
                         </select>
                     </div>
 
-                    <div class="filter-group">
-                        <label>Crime Type</label>
-                        <select id="filter-crime-type" class="form-select">
+                    <div class="filter-group flex flex-col gap-1">
+                        <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Crime Type</label>
+                        <select id="filter-crime-type" class="form-select w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all cursor-pointer">
                             <option value="All">All Crime Types</option>
                         </select>
                     </div>
 
-                    <div class="filter-group">
-                        <label>Severity Level</label>
-                        <select id="filter-severity" class="form-select">
+                    <div class="filter-group flex flex-col gap-1">
+                        <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Severity Level</label>
+                        <select id="filter-severity" class="form-select w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all cursor-pointer">
                             <option value="All">All Severities</option>
                             <option value="Low">Low</option>
                             <option value="Medium">Medium</option>
@@ -258,9 +318,9 @@
                         </select>
                     </div>
 
-                    <div class="filter-group">
-                        <label>Case Status</label>
-                        <select id="filter-status" class="form-select">
+                    <div class="filter-group flex flex-col gap-1">
+                        <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Case Status</label>
+                        <select id="filter-status" class="form-select w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all cursor-pointer">
                             <option value="All">All Statuses</option>
                             <option value="Open">Open</option>
                             <option value="Under Investigation">Under Investigation</option>
@@ -269,44 +329,44 @@
                         </select>
                     </div>
 
-                    <div class="filter-group">
-                        <label>Map Layers & Overlays</label>
-                        <div class="checkbox-list">
-                            <label class="checkbox-item"><input type="checkbox" id="layer-toggle-markers" checked> Incident Markers (SVG)</label>
-                            <label class="checkbox-item"><input type="checkbox" id="layer-toggle-routes" checked> Suspect Tracking Routes</label>
-                            <label class="checkbox-item"><input type="checkbox" id="layer-toggle-heatmap" checked> Density Heatmap Layer</label>
-                            <label class="checkbox-item"><input type="checkbox" id="layer-toggle-clusters" checked> DBSCAN Cluster Bubbles</label>
+                    <div class="filter-group flex flex-col gap-1.5">
+                        <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Map Layers & Overlays</label>
+                        <div class="checkbox-list flex flex-col gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                            <label class="checkbox-item flex items-center gap-2 cursor-pointer text-slate-700 font-medium"><input type="checkbox" id="layer-toggle-markers" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"> Incident Markers (SVG)</label>
+                            <label class="checkbox-item flex items-center gap-2 cursor-pointer text-slate-700 font-medium"><input type="checkbox" id="layer-toggle-routes" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"> Suspect Tracking Routes</label>
+                            <label class="checkbox-item flex items-center gap-2 cursor-pointer text-slate-700 font-medium"><input type="checkbox" id="layer-toggle-heatmap" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"> Density Heatmap Layer</label>
+                            <label class="checkbox-item flex items-center gap-2 cursor-pointer text-slate-700 font-medium"><input type="checkbox" id="layer-toggle-clusters" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"> DBSCAN Cluster Bubbles</label>
                         </div>
                     </div>
 
-                    <div class="quick-stats-box">
-                        <div class="stat-mini">
-                            <span class="lbl">Active Incidents</span>
-                            <span class="val" id="map-active-count">0</span>
+                    <div class="quick-stats-box grid grid-cols-2 gap-3 p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl">
+                        <div class="stat-mini flex flex-col">
+                            <span class="lbl text-[10px] font-bold text-indigo-600 uppercase">Active Incidents</span>
+                            <span class="val text-lg font-extrabold text-indigo-900" id="map-active-count">0</span>
                         </div>
-                        <div class="stat-mini">
-                            <span class="lbl">DBSCAN Clusters</span>
-                            <span class="val" id="map-clusters-count">0</span>
+                        <div class="stat-mini flex flex-col">
+                            <span class="lbl text-[10px] font-bold text-indigo-600 uppercase">DBSCAN Clusters</span>
+                            <span class="val text-lg font-extrabold text-indigo-900" id="map-clusters-count">0</span>
                         </div>
                     </div>
 
-                    <button id="apply-filters-btn" class="btn-primary">
-                        <i data-lucide="filter"></i> Apply Filters
+                    <button id="apply-filters-btn" class="btn-primary w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer">
+                        <i data-lucide="filter" class="w-4 h-4"></i> Apply Filters
                     </button>
                 </aside>
 
                 <!-- Map Container -->
-                <div class="map-wrapper">
-                    <div id="crime-map"></div>
+                <div class="map-wrapper relative flex-1 bg-slate-100 border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs flex flex-col min-h-[450px]">
+                    <div id="crime-map" class="w-full h-full min-h-[450px]"></div>
 
                     <!-- Map Floating Legend -->
-                    <div class="map-legend">
-                        <h4>Severity Legend</h4>
-                        <div class="legend-items">
-                            <span class="leg-item"><i class="dot low"></i> Low</span>
-                            <span class="leg-item"><i class="dot medium"></i> Medium</span>
-                            <span class="leg-item"><i class="dot high"></i> High</span>
-                            <span class="leg-item"><i class="dot critical"></i> Critical</span>
+                    <div class="map-legend absolute bottom-4 right-4 bg-white/95 backdrop-blur border border-slate-200/90 rounded-xl p-3 shadow-lg z-[400] text-xs">
+                        <h4 class="font-bold text-slate-900 mb-1.5 text-[11px] uppercase tracking-wider">Severity Legend</h4>
+                        <div class="legend-items flex items-center gap-3">
+                            <span class="leg-item flex items-center gap-1 text-slate-600 font-medium"><i class="dot low w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></i> Low</span>
+                            <span class="leg-item flex items-center gap-1 text-slate-600 font-medium"><i class="dot medium w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></i> Medium</span>
+                            <span class="leg-item flex items-center gap-1 text-slate-600 font-medium"><i class="dot high w-2.5 h-2.5 rounded-full bg-orange-500 inline-block"></i> High</span>
+                            <span class="leg-item flex items-center gap-1 text-slate-600 font-medium"><i class="dot critical w-2.5 h-2.5 rounded-full bg-rose-600 inline-block"></i> Critical</span>
                         </div>
                     </div>
                 </div>
@@ -316,91 +376,115 @@
 
         <!-- MODULE 2: 3-YEAR TREND DASHBOARD -->
         <section id="analytics-view" class="view-panel">
-            <div class="kpi-grid">
-                <div class="kpi-card gold-border">
-                    <div class="kpi-icon"><i data-lucide="shield-alert"></i></div>
+            <div class="view-header flex items-center justify-between mb-4 pb-3 border-b border-slate-200/80">
+                <button onclick="goBack()" class="btn-back inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-600 text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                    <i data-lucide="arrow-left" class="w-4 h-4 text-indigo-600"></i> Back
+                </button>
+                <h2 class="text-sm md:text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-600"></i> 3-Year Crime Volume Trend Analytics
+                </h2>
+            </div>
+            <div class="kpi-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+                <div class="kpi-card gold-border bg-white border border-slate-200/90 border-l-4 border-l-amber-500 rounded-2xl p-5 shadow-xs flex items-center gap-4 hover:shadow-md transition-all">
+                    <div class="kpi-icon w-12 h-12 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="shield-alert" class="w-6 h-6"></i>
+                    </div>
                     <div class="kpi-details">
-                        <span class="kpi-title">Total Crime Incidents</span>
-                        <h2 class="kpi-value" id="kpi-total-crimes">0</h2>
-                        <span class="kpi-sub">Statewide Dataset Records</span>
+                        <span class="kpi-title text-xs font-bold text-slate-500 uppercase tracking-wider block">Total Crime Incidents</span>
+                        <h2 class="kpi-value text-2xl font-extrabold text-slate-900 my-0.5" id="kpi-total-crimes">0</h2>
+                        <span class="kpi-sub text-xs text-slate-400 font-medium">Statewide Dataset Records</span>
                     </div>
                 </div>
 
-                <div class="kpi-card green-border">
-                    <div class="kpi-icon"><i data-lucide="check-circle-2"></i></div>
+                <div class="kpi-card green-border bg-white border border-slate-200/90 border-l-4 border-l-emerald-500 rounded-2xl p-5 shadow-xs flex items-center gap-4 hover:shadow-md transition-all">
+                    <div class="kpi-icon w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                    </div>
                     <div class="kpi-details">
-                        <span class="kpi-title">Solved / Closed Cases</span>
-                        <h2 class="kpi-value" id="kpi-solved-cases">0</h2>
-                        <span class="kpi-sub" id="kpi-resolution-rate">0% Resolution Rate</span>
+                        <span class="kpi-title text-xs font-bold text-slate-500 uppercase tracking-wider block">Solved / Closed Cases</span>
+                        <h2 class="kpi-value text-2xl font-extrabold text-slate-900 my-0.5" id="kpi-solved-cases">0</h2>
+                        <span class="kpi-sub text-xs text-emerald-600 font-semibold" id="kpi-resolution-rate">0% Resolution Rate</span>
                     </div>
                 </div>
 
-                <div class="kpi-card blue-border">
-                    <div class="kpi-icon"><i data-lucide="search"></i></div>
+                <div class="kpi-card blue-border bg-white border border-slate-200/90 border-l-4 border-l-sky-500 rounded-2xl p-5 shadow-xs flex items-center gap-4 hover:shadow-md transition-all">
+                    <div class="kpi-icon w-12 h-12 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="search" class="w-6 h-6"></i>
+                    </div>
                     <div class="kpi-details">
-                        <span class="kpi-title">Under Investigation</span>
-                        <h2 class="kpi-value" id="kpi-under-inv">0</h2>
-                        <span class="kpi-sub">Active Police Pursuit</span>
+                        <span class="kpi-title text-xs font-bold text-slate-500 uppercase tracking-wider block">Under Investigation</span>
+                        <h2 class="kpi-value text-2xl font-extrabold text-slate-900 my-0.5" id="kpi-under-inv">0</h2>
+                        <span class="kpi-sub text-xs text-slate-400 font-medium">Active Police Pursuit</span>
                     </div>
                 </div>
 
-                <div class="kpi-card red-border">
-                    <div class="kpi-icon"><i data-lucide="indian-rupee"></i></div>
+                <div class="kpi-card red-border bg-white border border-slate-200/90 border-l-4 border-l-rose-500 rounded-2xl p-5 shadow-xs flex items-center gap-4 hover:shadow-md transition-all">
+                    <div class="kpi-icon w-12 h-12 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="indian-rupee" class="w-6 h-6"></i>
+                    </div>
                     <div class="kpi-details">
-                        <span class="kpi-title">Total Monetary Loss</span>
-                        <h2 class="kpi-value" id="kpi-financial-loss">₹0</h2>
-                        <span class="kpi-sub">Reported Stolen Property / Fraud</span>
+                        <span class="kpi-title text-xs font-bold text-slate-500 uppercase tracking-wider block">Total Monetary Loss</span>
+                        <h2 class="kpi-value text-2xl font-extrabold text-slate-900 my-0.5" id="kpi-financial-loss">₹0</h2>
+                        <span class="kpi-sub text-xs text-slate-400 font-medium">Reported Stolen Property / Fraud</span>
                     </div>
                 </div>
             </div>
 
             <!-- Charts Grid -->
-            <div class="charts-grid">
-                <div class="chart-card glass-panel wide">
-                    <div class="card-header">
-                        <h3><i data-lucide="trending-up"></i> 3-Year Crime Volume Trend (Monthly Timeline)</h3>
+            <div class="charts-grid grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="chart-card glass-panel wide lg:col-span-2 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+                    <div class="card-header pb-3 mb-3 border-b border-slate-100">
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-4 h-4 text-indigo-600"></i> 3-Year Crime Volume Trend (Monthly Timeline)
+                        </h3>
                     </div>
-                    <div class="chart-body">
+                    <div class="chart-body h-72">
                         <canvas id="monthlyTrendChart"></canvas>
                     </div>
                 </div>
 
-                <div class="chart-card glass-panel">
-                    <div class="card-header">
-                        <h3><i data-lucide="map-pin"></i> Top Divisions by Incident Volume</h3>
+                <div class="chart-card glass-panel bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+                    <div class="card-header pb-3 mb-3 border-b border-slate-100">
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-indigo-600"></i> Top Divisions by Incident Volume
+                        </h3>
                     </div>
-                    <div class="chart-body">
+                    <div class="chart-body h-72">
                         <canvas id="divisionChart"></canvas>
                     </div>
                 </div>
 
-                <div class="chart-card glass-panel">
-                    <div class="card-header">
-                        <h3><i data-lucide="pie-chart"></i> Distribution by Crime Type</h3>
+                <div class="chart-card glass-panel bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+                    <div class="card-header pb-3 mb-3 border-b border-slate-100">
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-600"></i> Distribution by Crime Type
+                        </h3>
                     </div>
-                    <div class="chart-body">
+                    <div class="chart-body h-72">
                         <canvas id="crimeTypeChart"></canvas>
                     </div>
                 </div>
             </div>
 
             <!-- Historical District Table -->
-            <div class="table-card glass-panel margin-top">
-                <div class="card-header">
-                    <h3><i data-lucide="table"></i> Historical District Aggregate Data</h3>
+            <div class="table-card glass-panel bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs overflow-x-auto">
+                <div class="card-header pb-3 mb-3 border-b border-slate-100">
+                    <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="table" class="w-4 h-4 text-indigo-600"></i> Historical District Aggregate Data
+                    </h3>
                 </div>
-                <div class="table-container">
-                    <table class="ksp-table" id="district-trend-table">
+                <div class="table-container overflow-x-auto">
+                    <table class="ksp-table w-full text-left border-collapse text-xs" id="district-trend-table">
                         <thead>
-                            <tr>
-                                <th>Sl No.</th>
-                                <th>District / Unit</th>
-                                <th>IPC / BNS Crimes</th>
-                                <th>SLL Crimes</th>
-                                <th>Year</th>
+                            <tr class="bg-slate-50 text-slate-600 font-bold uppercase border-b border-slate-200">
+                                <th class="p-3">Sl No.</th>
+                                <th class="p-3">District / Unit</th>
+                                <th class="p-3">IPC / BNS Crimes</th>
+                                <th class="p-3">SLL Crimes</th>
+                                <th class="p-3">Year</th>
                             </tr>
                         </thead>
-                        <tbody></tbody>
+                        <tbody class="divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
             </div>
@@ -409,46 +493,60 @@
 
         <!-- MODULE 3: FIELD INCIDENT REPORTING -->
         <section id="reporting-view" class="view-panel">
-            <div class="form-container glass-panel">
-                <div class="form-header">
-                    <h2><i data-lucide="file-plus-2"></i> Field Incident Reporting (Officer View)</h2>
-                    <p>File a new incident report directly from the field. Auto-detects GPS coordinates and triggers instant DBSCAN pattern matching.</p>
+            <div class="view-header flex items-center justify-between mb-4 pb-3 border-b border-slate-200/80 max-w-4xl mx-auto">
+                <button onclick="goBack()" class="btn-back inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-600 text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                    <i data-lucide="arrow-left" class="w-4 h-4 text-indigo-600"></i> Back
+                </button>
+                <h2 class="text-sm md:text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="file-plus-2" class="w-4 h-4 text-indigo-600"></i> Field Incident Reporting
+                </h2>
+            </div>
+            <div class="form-container glass-panel bg-white border border-slate-200/90 rounded-2xl p-6 md:p-8 shadow-xs max-w-4xl mx-auto">
+                <div class="form-header mb-6 pb-4 border-b border-slate-100">
+                    <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="file-plus-2" class="w-5 h-5 text-indigo-600"></i> Field Incident Reporting (Officer View)
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-1">File a new incident report directly from the field. Auto-detects GPS coordinates and triggers instant DBSCAN pattern matching.</p>
                 </div>
 
-                <form id="incident-report-form">
-                    <div class="form-grid">
-                        <div class="form-section span-2">
-                            <div class="section-title"><i data-lucide="navigation"></i> 1. Location & Coordinates</div>
-                            <div class="gps-actions-bar">
-                                <button type="button" id="detect-gps-btn" class="btn-secondary">
-                                    <i data-lucide="locate-fixed"></i> Fetch Device GPS Location
+                <form id="incident-report-form" class="flex flex-col gap-6">
+                    <div class="form-grid grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="form-section md:col-span-2 flex flex-col gap-4 bg-slate-50/70 p-5 border border-slate-200/80 rounded-xl">
+                            <div class="section-title text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                                <i data-lucide="navigation" class="w-4 h-4 text-indigo-600"></i> 1. Location & Coordinates
+                            </div>
+                            <div class="gps-actions-bar flex items-center gap-3 flex-wrap">
+                                <button type="button" id="detect-gps-btn" class="btn-secondary inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer">
+                                    <i data-lucide="locate-fixed" class="w-4 h-4 text-indigo-600"></i> Fetch Device GPS Location
                                 </button>
-                                <span class="gps-status" id="gps-status-lbl">Click to detect GPS lat/lng</span>
+                                <span class="gps-status text-xs font-medium text-slate-500" id="gps-status-lbl">Click to detect GPS lat/lng</span>
                             </div>
 
-                            <div class="map-picker-container">
-                                <div id="picker-map"></div>
-                                <span class="map-hint">Click or drag the pin on the map to adjust exact incident coordinates.</span>
+                            <div class="map-picker-container relative w-full h-64 rounded-xl overflow-hidden border border-slate-200">
+                                <div id="picker-map" class="w-full h-full"></div>
+                                <span class="map-hint absolute bottom-2 left-2 right-2 bg-white/90 backdrop-blur px-3 py-1 rounded-lg text-[11px] text-slate-600 font-medium z-[400] text-center shadow-xs">Click or drag the pin on the map to adjust exact incident coordinates.</span>
                             </div>
 
-                            <div class="input-row">
-                                <div class="form-group">
-                                    <label>Latitude <span class="req">*</span></label>
-                                    <input type="number" step="any" id="rep-lat" class="form-input" required placeholder="e.g. 12.9716">
+                            <div class="input-row grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="form-group flex flex-col gap-1">
+                                    <label class="text-xs font-bold text-slate-700">Latitude <span class="text-rose-500">*</span></label>
+                                    <input type="number" step="any" id="rep-lat" class="form-input w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none" required placeholder="e.g. 12.9716">
                                 </div>
-                                <div class="form-group">
-                                    <label>Longitude <span class="req">*</span></label>
-                                    <input type="number" step="any" id="rep-lng" class="form-input" required placeholder="e.g. 77.5946">
+                                <div class="form-group flex flex-col gap-1">
+                                    <label class="text-xs font-bold text-slate-700">Longitude <span class="text-rose-500">*</span></label>
+                                    <input type="number" step="any" id="rep-lng" class="form-input w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none" required placeholder="e.g. 77.5946">
                                 </div>
                             </div>
                         </div>
 
-                        <div class="form-section span-2">
-                            <div class="section-title"><i data-lucide="clipboard"></i> 2. Incident Classification</div>
-                            <div class="input-row">
-                                <div class="form-group">
-                                    <label>Crime Type <span class="req">*</span></label>
-                                    <select id="rep-crime-type" class="form-select" required>
+                        <div class="form-section md:col-span-2 flex flex-col gap-4 bg-slate-50/70 p-5 border border-slate-200/80 rounded-xl">
+                            <div class="section-title text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                                <i data-lucide="clipboard" class="w-4 h-4 text-indigo-600"></i> 2. Incident Classification
+                            </div>
+                            <div class="input-row grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="form-group flex flex-col gap-1">
+                                    <label class="text-xs font-bold text-slate-700">Crime Type <span class="text-rose-500">*</span></label>
+                                    <select id="rep-crime-type" class="form-select w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none cursor-pointer" required>
                                         <option value="Theft">Theft</option>
                                         <option value="Vehicle Theft">Vehicle Theft</option>
                                         <option value="Robbery">Robbery</option>
@@ -459,9 +557,9 @@
                                         <option value="Murder">Murder</option>
                                     </select>
                                 </div>
-                                <div class="form-group">
-                                    <label>Severity Level <span class="req">*</span></label>
-                                    <select id="rep-severity" class="form-select" required>
+                                <div class="form-group flex flex-col gap-1">
+                                    <label class="text-xs font-bold text-slate-700">Severity Level <span class="text-rose-500">*</span></label>
+                                    <select id="rep-severity" class="form-select w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none cursor-pointer" required>
                                         <option value="Low">Low</option>
                                         <option value="Medium" selected>Medium</option>
                                         <option value="High">High</option>
@@ -470,43 +568,43 @@
                                 </div>
                             </div>
 
-                            <div class="input-row">
-                                <div class="form-group">
-                                    <label>Police Division / Jurisdiction <span class="req">*</span></label>
-                                    <input type="text" id="rep-division" class="form-input" required placeholder="e.g. Bengaluru Urban">
+                            <div class="input-row grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="form-group flex flex-col gap-1">
+                                    <label class="text-xs font-bold text-slate-700">Police Division / Jurisdiction <span class="text-rose-500">*</span></label>
+                                    <input type="text" id="rep-division" class="form-input w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none" required placeholder="e.g. Bengaluru Urban">
                                 </div>
-                                <div class="form-group">
-                                    <label>Police Station ID <span class="req">*</span></label>
-                                    <input type="text" id="rep-station" class="form-input" required placeholder="e.g. Whitefield PS">
-                                </div>
-                            </div>
-
-                            <div class="input-row">
-                                <div class="form-group">
-                                    <label>Date & Time</label>
-                                    <input type="datetime-local" id="rep-datetime" class="form-input">
-                                </div>
-                                <div class="form-group">
-                                    <label>Monetary Loss (₹)</label>
-                                    <input type="number" id="rep-amount" class="form-input" placeholder="0">
+                                <div class="form-group flex flex-col gap-1">
+                                    <label class="text-xs font-bold text-slate-700">Police Station ID <span class="text-rose-500">*</span></label>
+                                    <input type="text" id="rep-station" class="form-input w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none" required placeholder="e.g. Whitefield PS">
                                 </div>
                             </div>
 
-                            <div class="form-group">
-                                <label>Modus Operandi (MO) / Signature</label>
-                                <input type="text" id="rep-mo" class="form-input" placeholder="e.g. Two-wheeler mobile snatching, Door lock picking">
+                            <div class="input-row grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="form-group flex flex-col gap-1">
+                                    <label class="text-xs font-bold text-slate-700">Date & Time</label>
+                                    <input type="datetime-local" id="rep-datetime" class="form-input w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none">
+                                </div>
+                                <div class="form-group flex flex-col gap-1">
+                                    <label class="text-xs font-bold text-slate-700">Monetary Loss (₹)</label>
+                                    <input type="number" id="rep-amount" class="form-input w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none" placeholder="0">
+                                </div>
                             </div>
 
-                            <div class="form-group">
-                                <label>Incident Observation Notes</label>
-                                <textarea id="rep-desc" class="form-textarea" rows="3" placeholder="Enter field notes..."></textarea>
+                            <div class="form-group flex flex-col gap-1">
+                                <label class="text-xs font-bold text-slate-700">Modus Operandi (MO) / Signature</label>
+                                <input type="text" id="rep-mo" class="form-input w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none" placeholder="e.g. Two-wheeler mobile snatching, Door lock picking">
+                            </div>
+
+                            <div class="form-group flex flex-col gap-1">
+                                <label class="text-xs font-bold text-slate-700">Incident Observation Notes</label>
+                                <textarea id="rep-desc" class="form-textarea w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none" rows="3" placeholder="Enter field notes..."></textarea>
                             </div>
                         </div>
                     </div>
 
-                    <div class="form-actions">
-                        <button type="submit" id="submit-report-btn" class="btn-primary btn-large">
-                            <i data-lucide="send"></i> Submit Incident & Scan ML Patterns
+                    <div class="form-actions flex justify-end">
+                        <button type="submit" id="submit-report-btn" class="btn-primary btn-large inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all cursor-pointer active:scale-95">
+                            <i data-lucide="send" class="w-4 h-4"></i> Submit Incident & Scan ML Patterns
                         </button>
                     </div>
                 </form>
@@ -516,67 +614,77 @@
 
         <!-- MODULE 4: CASE RESOLUTION MANAGEMENT -->
         <section id="resolution-view" class="view-panel">
-            <div class="resolution-layout">
-                <div class="resolution-search-box glass-panel">
-                    <h3><i data-lucide="search"></i> Lookup Case Record in Database</h3>
-                    <div class="search-input-group">
-                        <input type="text" id="res-search-input" class="form-input" placeholder="Enter Case ID (e.g. KSP-2024-1014), Suspect Name, or Station...">
-                        <button id="res-search-btn" class="btn-secondary"><i data-lucide="search"></i> Search Case</button>
+            <div class="view-header flex items-center justify-between mb-4 pb-3 border-b border-slate-200/80 max-w-3xl mx-auto">
+                <button onclick="goBack()" class="btn-back inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-600 text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                    <i data-lucide="arrow-left" class="w-4 h-4 text-indigo-600"></i> Back
+                </button>
+                <h2 class="text-sm md:text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-indigo-600"></i> Case Resolution & Management
+                </h2>
+            </div>
+            <div class="resolution-layout max-w-3xl mx-auto flex flex-col gap-6">
+                <div class="resolution-search-box glass-panel bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs">
+                    <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2 mb-4">
+                        <i data-lucide="search" class="w-4 h-4 text-indigo-600"></i> Lookup Case Record in Database
+                    </h3>
+                    <div class="search-input-group flex items-center gap-3">
+                        <input type="text" id="res-search-input" class="form-input flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none" placeholder="Enter Case ID (e.g. KSP-2024-1014), Suspect Name, or Station...">
+                        <button id="res-search-btn" class="btn-secondary inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"><i data-lucide="search" class="w-4 h-4"></i> Search Case</button>
                     </div>
                 </div>
 
-                <div id="res-case-card" class="case-card glass-panel hidden">
-                    <div class="case-card-header">
+                <div id="res-case-card" class="case-card glass-panel bg-white border border-slate-200/90 rounded-2xl p-6 shadow-md hidden flex-col gap-5">
+                    <div class="case-card-header flex items-center justify-between pb-4 border-b border-slate-100">
                         <div>
-                            <span class="badge-pill case-id-tag" id="res-card-id">KSP-2024-1003</span>
-                            <h3 id="res-card-title">Robbery Incident</h3>
+                            <span class="badge-pill case-id-tag bg-indigo-100 text-indigo-700 text-[11px] px-2.5 py-1 rounded-lg font-extrabold" id="res-card-id">KSP-2024-1003</span>
+                            <h3 class="text-lg font-extrabold text-slate-900 mt-2" id="res-card-title">Robbery Incident</h3>
                         </div>
-                        <span class="status-badge" id="res-card-status">Open</span>
+                        <span class="status-badge bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-bold" id="res-card-status">Open</span>
                     </div>
 
-                    <div class="case-info-grid">
-                        <div><strong>Division:</strong> <span id="res-card-div">--</span></div>
-                        <div><strong>Station:</strong> <span id="res-card-station">--</span></div>
-                        <div><strong>Date Time:</strong> <span id="res-card-date">--</span></div>
-                        <div><strong>Severity:</strong> <span id="res-card-sev">--</span></div>
-                        <div><strong>Lat / Lng:</strong> <span id="res-card-coords">--</span></div>
-                        <div><strong>MO Signature:</strong> <span id="res-card-mo">--</span></div>
+                    <div class="case-info-grid grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl text-xs">
+                        <div><strong class="text-slate-500 block text-[10px] uppercase">Division:</strong> <span id="res-card-div" class="font-bold text-slate-800">--</span></div>
+                        <div><strong class="text-slate-500 block text-[10px] uppercase">Station:</strong> <span id="res-card-station" class="font-bold text-slate-800">--</span></div>
+                        <div><strong class="text-slate-500 block text-[10px] uppercase">Date Time:</strong> <span id="res-card-date" class="font-bold text-slate-800">--</span></div>
+                        <div><strong class="text-slate-500 block text-[10px] uppercase">Severity:</strong> <span id="res-card-sev" class="font-bold text-slate-800">--</span></div>
+                        <div><strong class="text-slate-500 block text-[10px] uppercase">Lat / Lng:</strong> <span id="res-card-coords" class="font-bold text-slate-800">--</span></div>
+                        <div><strong class="text-slate-500 block text-[10px] uppercase">MO Signature:</strong> <span id="res-card-mo" class="font-bold text-slate-800">--</span></div>
                     </div>
 
-                    <form id="resolution-form" class="resolution-form">
-                        <h4>Update Resolution & Suspect Details</h4>
-                        <div class="input-row">
-                            <div class="form-group">
-                                <label>Final Status <span class="req">*</span></label>
-                                <select id="res-status-select" class="form-select">
+                    <form id="resolution-form" class="resolution-form flex flex-col gap-4">
+                        <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Update Resolution & Suspect Details</h4>
+                        <div class="input-row grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="form-group flex flex-col gap-1">
+                                <label class="text-xs font-bold text-slate-700">Final Status <span class="text-rose-500">*</span></label>
+                                <select id="res-status-select" class="form-select bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-500 outline-none cursor-pointer">
                                     <option value="Under Investigation">Under Investigation</option>
                                     <option value="Solved" selected>Solved</option>
                                     <option value="Closed">Closed</option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label>Suspect ID</label>
-                                <input type="text" id="res-suspect-id" class="form-input" placeholder="e.g. SUSP-4921">
+                            <div class="form-group flex flex-col gap-1">
+                                <label class="text-xs font-bold text-slate-700">Suspect ID</label>
+                                <input type="text" id="res-suspect-id" class="form-input bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-500 outline-none" placeholder="e.g. SUSP-4921">
                             </div>
                         </div>
 
-                        <div class="input-row">
-                            <div class="form-group">
-                                <label>Suspect Name / Alias</label>
-                                <input type="text" id="res-suspect-name" class="form-input" placeholder="e.g. Ramesh @ Kali">
+                        <div class="input-row grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="form-group flex flex-col gap-1">
+                                <label class="text-xs font-bold text-slate-700">Suspect Name / Alias</label>
+                                <input type="text" id="res-suspect-name" class="form-input bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-500 outline-none" placeholder="e.g. Ramesh @ Kali">
                             </div>
-                            <div class="form-group">
-                                <label>Recovered Loss (₹)</label>
-                                <input type="number" id="res-recovered-amount" class="form-input" placeholder="0">
+                            <div class="form-group flex flex-col gap-1">
+                                <label class="text-xs font-bold text-slate-700">Recovered Loss (₹)</label>
+                                <input type="number" id="res-recovered-amount" class="form-input bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-500 outline-none" placeholder="0">
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label>Resolution Notes / Closing Statement <span class="req">*</span></label>
-                            <textarea id="res-notes" class="form-textarea" rows="3" required placeholder="Describe investigation findings..."></textarea>
+                        <div class="form-group flex flex-col gap-1">
+                            <label class="text-xs font-bold text-slate-700">Resolution Notes / Closing Statement <span class="text-rose-500">*</span></label>
+                            <textarea id="res-notes" class="form-textarea bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:bg-white focus:border-indigo-500 outline-none" rows="3" required placeholder="Describe investigation findings..."></textarea>
                         </div>
 
-                        <button type="submit" class="btn-primary"><i data-lucide="save"></i> Update Case Resolution</button>
+                        <button type="submit" class="btn-primary inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"><i data-lucide="save" class="w-4 h-4"></i> Update Case Resolution</button>
                     </form>
                 </div>
             </div>
@@ -585,57 +693,79 @@
 
         <!-- MODULE 5: ML ALERTS FEED -->
         <section id="alerts-view" class="view-panel">
-            <div class="alerts-layout">
-                <div class="alerts-header glass-panel">
+            <div class="view-header flex items-center justify-between mb-4 pb-3 border-b border-slate-200/80 max-w-4xl mx-auto">
+                <button onclick="goBack()" class="btn-back inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-600 text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                    <i data-lucide="arrow-left" class="w-4 h-4 text-indigo-600"></i> Back
+                </button>
+                <h2 class="text-sm md:text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="cpu" class="w-4 h-4 text-indigo-600"></i> ML Pattern Recurrence Alerts
+                </h2>
+            </div>
+            <div class="alerts-layout max-w-4xl mx-auto flex flex-col gap-5">
+                <div class="alerts-header glass-panel bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs flex items-center justify-between flex-wrap gap-4">
                     <div>
-                        <h2><i data-lucide="cpu"></i> ML Pattern Detection & Recurrence Feed</h2>
-                        <p>Real-time DBSCAN spatial clustering and modus operandi pattern alerts.</p>
+                        <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="cpu" class="w-5 h-5 text-indigo-600"></i> ML Pattern Detection & Recurrence Feed
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Real-time DBSCAN spatial clustering and modus operandi pattern alerts.</p>
                     </div>
-                    <button id="refresh-alerts-btn" class="btn-secondary"><i data-lucide="refresh-cw"></i> Refresh Alerts</button>
+                    <button id="refresh-alerts-btn" class="btn-secondary inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"><i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-indigo-600"></i> Refresh Alerts</button>
                 </div>
 
-                <div id="alerts-feed-container" class="alerts-list"></div>
+                <div id="alerts-feed-container" class="alerts-list flex flex-col gap-4"></div>
             </div>
         </section>
 
 
-        <!-- MODULE 6: KSP POLICE INTELLIGENCE COMPANION & CONVERSATIONAL AI CHATBOT -->
+        <!-- MODULE 6: AI POLICE INTELLIGENCE COMPANION -->
         <section id="ai-view" class="view-panel">
-            <div class="ai-split-layout">
+            <div class="view-header flex items-center justify-between mb-4 pb-3 border-b border-slate-200/80">
+                <button onclick="goBack()" class="btn-back inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-600 text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                    <i data-lucide="arrow-left" class="w-4 h-4 text-indigo-600"></i> Back
+                </button>
+                <h2 class="text-sm md:text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="bot" class="w-4 h-4 text-indigo-600"></i> AI Intelligence Companion & Pattern Network
+                </h2>
+            </div>
+            <div class="ai-split-layout grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <!-- LEFT COLUMN: CONVERSATIONAL CHATBOT THREAD -->
-                <div class="ai-chat-card glass-panel flex-chat-container">
-                    <div class="ai-header">
+                <div class="ai-chat-card glass-panel flex-chat-container lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col h-[680px]">
+                    <div class="ai-header flex items-center justify-between pb-3 border-b border-slate-100 mb-3 flex-wrap gap-2">
                         <div>
-                            <h2><i data-lucide="bot"></i> KSP Police Intelligence Companion</h2>
-                            <p>Interactive Law Enforcement Co-Pilot (Voice Enabled: English & ಕನ್ನಡ)</p>
+                            <h2 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                                <i data-lucide="bot" class="w-5 h-5 text-indigo-600"></i> KSP Police Intelligence Companion
+                            </h2>
+                            <p class="text-[11px] text-slate-500">Interactive Law Enforcement Co-Pilot (Voice Enabled: English & ಕನ್ನಡ)</p>
                         </div>
-                        <div class="ai-header-controls">
-                            <button id="export-pdf-btn" class="btn-secondary pdf-export-btn" title="Export PDF Report">
-                                <i data-lucide="download"></i> PDF Report
+                        <div class="ai-header-controls flex items-center gap-2">
+                            <button id="export-pdf-btn" class="btn-secondary pdf-export-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-semibold cursor-pointer" title="Export PDF Report">
+                                <i data-lucide="download" class="w-3.5 h-3.5 text-indigo-600"></i> PDF Report
                             </button>
-                            <div class="ai-lang-toggle">
-                                <button id="btn-lang-en" class="lang-btn active">🇬🇧 English</button>
-                                <button id="btn-lang-kn" class="lang-btn">🇮🇳 ಕನ್ನಡ</button>
+                            <div class="ai-lang-toggle flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                                <button id="btn-lang-en" class="lang-btn active px-2.5 py-1 rounded-lg text-xs font-bold text-slate-700 hover:text-indigo-600 transition-all cursor-pointer">🇬🇧 English</button>
+                                <button id="btn-lang-kn" class="lang-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-700 hover:text-indigo-600 transition-all cursor-pointer">🇮🇳 ಕನ್ನಡ</button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Quick Starter Prompts -->
-                    <div class="quick-prompts-bar" id="ai-quick-prompts">
-                        <span class="prompt-chip" data-prompt="Show theft cases in Mysuru">🔍 Theft in Mysuru</span>
-                        <span class="prompt-chip" data-prompt="ಮೈಸೂರಿನಲ್ಲಿ ಕಳವು ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ">🇮🇳 ಮೈಸೂರು ಕಳವು</span>
-                        <span class="prompt-chip" data-prompt="Find high severity robbery incidents in Bengaluru">🚨 Robbery in Bengaluru</span>
-                        <span class="prompt-chip" data-prompt="ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ದರೋಡೆ ಪ್ರಕರಣಗಳು">🇮🇳 ಬೆಂಗಳೂರು ದರೋಡೆ</span>
-                        <span class="prompt-chip" data-prompt="List open murder investigation cases">📂 Open Murder Cases</span>
+                    <div class="quick-prompts-bar flex items-center gap-2 overflow-x-auto pb-2 mb-3" id="ai-quick-prompts">
+                        <span class="prompt-chip bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 text-slate-700 text-[11px] px-3 py-1 rounded-full font-semibold cursor-pointer whitespace-nowrap transition-all" data-prompt="Show theft cases in Mysuru">🔍 Theft in Mysuru</span>
+                        <span class="prompt-chip bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 text-slate-700 text-[11px] px-3 py-1 rounded-full font-semibold cursor-pointer whitespace-nowrap transition-all" data-prompt="ಮೈಸೂರಿನಲ್ಲಿ ಕಳವು ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ">🇮🇳 ಮೈಸೂರು ಕಳವು</span>
+                        <span class="prompt-chip bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 text-slate-700 text-[11px] px-3 py-1 rounded-full font-semibold cursor-pointer whitespace-nowrap transition-all" data-prompt="Find high severity robbery incidents in Bengaluru">🚨 Robbery in Bengaluru</span>
+                        <span class="prompt-chip bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 text-slate-700 text-[11px] px-3 py-1 rounded-full font-semibold cursor-pointer whitespace-nowrap transition-all" data-prompt="ಬೆಂಗಳೂರು ನಗರದಲ್ಲಿ ದರೋಡೆ ಪ್ರಕರಣಗಳು">🇮🇳 ಬೆಂಗಳೂರು ದರೋಡೆ</span>
+                        <span class="prompt-chip bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 text-slate-700 text-[11px] px-3 py-1 rounded-full font-semibold cursor-pointer whitespace-nowrap transition-all" data-prompt="List open murder investigation cases">📂 Open Murder Cases</span>
                     </div>
 
                     <!-- Scrollable Chatbot Thread -->
-                    <div id="ai-chat-thread" class="chat-messages-thread">
-                        <div class="chat-message bot-message">
-                            <div class="message-avatar"><i data-lucide="shield"></i></div>
-                            <div class="message-body">
-                                <div class="message-sender">KSP Police Companion <span class="badge-tag">AI Officer</span></div>
-                                <div class="message-text">
+                    <div id="ai-chat-thread" class="chat-messages-thread flex-1 overflow-y-auto pr-2 flex flex-col gap-3 mb-3">
+                        <div class="chat-message bot-message flex items-start gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                            <div class="message-avatar w-8 h-8 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i data-lucide="shield" class="w-4 h-4"></i>
+                            </div>
+                            <div class="message-body flex-1">
+                                <div class="message-sender text-[11px] font-bold text-slate-500 mb-1">KSP Police Companion <span class="badge-tag bg-indigo-100 text-indigo-700 text-[10px] px-1.5 py-0.5 rounded font-extrabold ml-1">AI Officer</span></div>
+                                <div class="message-text text-xs text-slate-700 leading-relaxed">
                                     Namaste Officer! I am your AI Companion. Discuss any crime incident with me in English or Kannada (type or use the mic).
                                     I will retrieve matching database records, update the <strong>Right-Side Intelligence Panel</strong> with location statistics, and provide tactical hints to apprehend suspects.
                                 </div>
@@ -644,116 +774,126 @@
                     </div>
 
                     <!-- Interactive Chat Input -->
-                    <div class="chat-input-box">
-                        <input type="text" id="ai-chat-input" class="form-input" placeholder="Ask a question in English or Kannada (e.g. ಮೈಸೂರಿನಲ್ಲಿ ಕಳವು)...">
-                        <button type="button" id="voice-input-btn" class="btn-secondary mic-btn" title="Voice Search (English & Kannada)">
-                            <i data-lucide="mic"></i>
+                    <div class="chat-input-box flex items-center gap-2 pt-2 border-t border-slate-100">
+                        <input type="text" id="ai-chat-input" class="form-input flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:bg-white focus:border-indigo-500 outline-none" placeholder="Ask a question in English or Kannada (e.g. ಮೈಸೂರಿನಲ್ಲಿ ಕಳವು)...">
+                        <button type="button" id="voice-input-btn" class="btn-secondary mic-btn p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all cursor-pointer" title="Voice Search (English & Kannada)">
+                            <i data-lucide="mic" class="w-4 h-4 text-indigo-600"></i>
                         </button>
-                        <button type="button" id="ai-send-btn" class="btn-primary">
-                            <i data-lucide="send"></i> Send
+                        <button type="button" id="ai-send-btn" class="btn-primary inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer">
+                            <i data-lucide="send" class="w-4 h-4"></i> Send
                         </button>
                     </div>
                 </div>
 
                 <!-- RIGHT COLUMN: CRIME & SUSPECT INTELLIGENCE PANEL -->
-                <div class="ai-intelligence-panel glass-panel">
-                    <div class="intel-header">
-                        <h3><i data-lucide="radar"></i> Crime & Suspect Intelligence</h3>
-                        <span id="intel-query-tag" class="intel-badge">Statewide View</span>
+                <div class="ai-intelligence-panel glass-panel lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col gap-4 h-[680px] overflow-y-auto">
+                    <div class="intel-header flex items-center justify-between pb-3 border-b border-slate-100">
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="radar" class="w-4 h-4 text-indigo-600"></i> Crime & Suspect Intelligence
+                        </h3>
+                        <span id="intel-query-tag" class="intel-badge bg-indigo-50 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-bold border border-indigo-100">Statewide View</span>
                     </div>
 
                     <!-- 1. KPI Stats Grid -->
-                    <div class="intel-stats-grid">
-                        <div class="intel-stat-box gold">
-                            <span class="lbl">Total Crimes</span>
-                            <strong id="intel-total-crimes">--</strong>
+                    <div class="intel-stats-grid grid grid-cols-2 gap-3">
+                        <div class="intel-stat-box gold bg-amber-50/80 border border-amber-100 rounded-xl p-3">
+                            <span class="lbl text-[10px] font-bold text-amber-700 uppercase block">Total Crimes</span>
+                            <strong id="intel-total-crimes" class="text-base font-extrabold text-slate-900">--</strong>
                         </div>
-                        <div class="intel-stat-box red">
-                            <span class="lbl">Active / Open</span>
-                            <strong id="intel-active-crimes">--</strong>
+                        <div class="intel-stat-box red bg-rose-50/80 border border-rose-100 rounded-xl p-3">
+                            <span class="lbl text-[10px] font-bold text-rose-700 uppercase block">Active / Open</span>
+                            <strong id="intel-active-crimes" class="text-base font-extrabold text-slate-900">--</strong>
                         </div>
-                        <div class="intel-stat-box green">
-                            <span class="lbl">Solved / Closed</span>
-                            <strong id="intel-solved-crimes">--</strong>
+                        <div class="intel-stat-box green bg-emerald-50/80 border border-emerald-100 rounded-xl p-3">
+                            <span class="lbl text-[10px] font-bold text-emerald-700 uppercase block">Solved / Closed</span>
+                            <strong id="intel-solved-crimes" class="text-base font-extrabold text-slate-900">--</strong>
                         </div>
-                        <div class="intel-stat-box blue">
-                            <span class="lbl">Financial Loss</span>
-                            <strong id="intel-total-loss">--</strong>
+                        <div class="intel-stat-box blue bg-sky-50/80 border border-sky-100 rounded-xl p-3">
+                            <span class="lbl text-[10px] font-bold text-sky-700 uppercase block">Financial Loss</span>
+                            <strong id="intel-total-loss" class="text-base font-extrabold text-slate-900">--</strong>
                         </div>
                     </div>
 
                     <!-- 2. Crime Location Breakdown -->
-                    <div class="intel-section-card">
-                        <h4><i data-lucide="map-pin"></i> Crime Location Breakdown</h4>
-                        <div id="intel-locations-list" class="intel-locations-list">
-                            <div class="intel-empty-note">Discuss a crime query to view station & division breakdown.</div>
+                    <div class="intel-section-card bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                        <h4 class="text-xs font-bold text-slate-800 flex items-center gap-2 mb-2">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-600"></i> Crime Location Breakdown
+                        </h4>
+                        <div id="intel-locations-list" class="intel-locations-list text-xs text-slate-600">
+                            <div class="intel-empty-note text-slate-400 italic">Discuss a crime query to view station & division breakdown.</div>
                         </div>
                     </div>
 
-                    <!-- 3. Companion Tactical Hints to Find Suspect -->
-                    <div class="intel-section-card tactical-card">
-                        <h4><i data-lucide="crosshair"></i> Companion Tactical Hints to Find Suspect</h4>
-                        <div id="intel-tactical-hints" class="tactical-content">
-                            <div class="tactical-alert-box">
-                                <i data-lucide="lightbulb" style="color: #f59e0b; flex-shrink: 0;"></i>
-                                <p id="intel-hint-text">Ask a question about a crime (e.g., "Theft cases in Mysuru") to generate tactical suspect leads, active MO patterns, and field action tips.</p>
+                    <!-- 3. Companion Tactical Hints -->
+                    <div class="intel-section-card tactical-card bg-indigo-50/60 p-3.5 rounded-xl border border-indigo-100">
+                        <h4 class="text-xs font-bold text-indigo-900 flex items-center gap-2 mb-2">
+                            <i data-lucide="crosshair" class="w-3.5 h-3.5 text-indigo-600"></i> Tactical Hints to Find Suspect
+                        </h4>
+                        <div id="intel-tactical-hints" class="tactical-content flex flex-col gap-2">
+                            <div class="tactical-alert-box flex items-start gap-2 text-xs text-slate-700">
+                                <i data-lucide="lightbulb" class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5"></i>
+                                <p id="intel-hint-text" class="text-slate-600">Ask a question about a crime (e.g., "Theft cases in Mysuru") to generate tactical suspect leads, active MO patterns, and field action tips.</p>
                             </div>
-                            <div class="tactical-meta-row">
+                            <div class="tactical-meta-row flex flex-col gap-2 pt-2 border-t border-indigo-100 text-xs">
                                 <div>
-                                    <span class="meta-label">Known Suspect Leads:</span>
-                                    <div id="intel-suspects-tags" class="tags-flex"><span class="tag-pill">Pending Query</span></div>
+                                    <span class="meta-label font-bold text-slate-600 text-[11px] block">Known Suspect Leads:</span>
+                                    <div id="intel-suspects-tags" class="tags-flex flex flex-wrap gap-1 mt-1"><span class="tag-pill bg-white text-slate-600 px-2 py-0.5 rounded text-[11px] font-medium border border-slate-200">Pending Query</span></div>
                                 </div>
                                 <div>
-                                    <span class="meta-label">Modus Operandi Tactics:</span>
-                                    <div id="intel-mo-tags" class="tags-flex"><span class="tag-pill">Pending Query</span></div>
+                                    <span class="meta-label font-bold text-slate-600 text-[11px] block">Modus Operandi Tactics:</span>
+                                    <div id="intel-mo-tags" class="tags-flex flex flex-wrap gap-1 mt-1"><span class="tag-pill bg-white text-slate-600 px-2 py-0.5 rounded text-[11px] font-medium border border-slate-200">Pending Query</span></div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- 4. Recommended Follow-up Investigation Chips -->
-                    <div class="intel-section-card">
-                        <h4><i data-lucide="sparkles"></i> Recommended Next Investigation Searches</h4>
-                        <div id="ai-companion-suggestions" class="companion-suggestions-chips">
-                            <button class="prompt-chip suggestion-followup-chip" onclick="runAIQueryFromChip('ಮೈಸೂರಿನಲ್ಲಿ ಕಳವು ಪ್ರಕರಣಗಳು')">🇮🇳 ಮೈಸೂರು ಕಳವು</button>
-                            <button class="prompt-chip suggestion-followup-chip" onclick="runAIQueryFromChip('Show solved robbery cases in Bengaluru')">🔍 Solved Robbery Cases</button>
+                    <div class="intel-section-card bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                        <h4 class="text-xs font-bold text-slate-800 flex items-center gap-2 mb-2">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-600"></i> Recommended Next Searches
+                        </h4>
+                        <div id="ai-companion-suggestions" class="companion-suggestions-chips flex flex-wrap gap-1.5">
+                            <button class="prompt-chip suggestion-followup-chip bg-white border border-slate-200 text-slate-700 text-[11px] px-2.5 py-1 rounded-lg font-semibold hover:text-indigo-600 hover:border-indigo-300 transition-all cursor-pointer" onclick="runAIQueryFromChip('ಮೈಸೂರಿನಲ್ಲಿ ಕಳವು ಪ್ರಕರಣಗಳು')">🇮🇳 ಮೈಸೂರು ಕಳವು</button>
+                            <button class="prompt-chip suggestion-followup-chip bg-white border border-slate-200 text-slate-700 text-[11px] px-2.5 py-1 rounded-lg font-semibold hover:text-indigo-600 hover:border-indigo-300 transition-all cursor-pointer" onclick="runAIQueryFromChip('Show solved robbery cases in Bengaluru')">🔍 Solved Robbery Cases</button>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
 
-                <!-- CRIMINAL NETWORK & PATTERN GRAPH VISUALIZER WITH POLICE COMPANION INSIGHTS -->
-                <div class="criminal-network-card glass-panel margin-top">
-                    <div class="card-header flex-between">
-                        <div>
-                            <h3><i data-lucide="share-2"></i> Criminal Network & Modus Operandi Pattern Graph</h3>
-                            <p class="text-sub">Graph network mapping Suspects, Cases, Stations, and Modus Operandi linkages with live Police Companion analysis.</p>
-                        </div>
-                        <button id="load-graph-btn" class="btn-secondary">
-                            <i data-lucide="refresh-cw"></i> Reload Graph Topology
-                        </button>
+            <!-- CRIMINAL NETWORK & PATTERN GRAPH VISUALIZER -->
+            <div class="criminal-network-card glass-panel bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs mt-6">
+                <div class="card-header flex items-center justify-between pb-3 mb-4 border-b border-slate-100 flex-wrap gap-2">
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="share-2" class="w-4 h-4 text-indigo-600"></i> Criminal Network & Modus Operandi Pattern Graph
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Graph network mapping Suspects, Cases, Stations, and Modus Operandi linkages with live Police Companion analysis.</p>
                     </div>
+                    <button id="load-graph-btn" class="btn-secondary inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-indigo-600"></i> Reload Graph Topology
+                    </button>
+                </div>
 
-                    <div class="graph-workspace-grid">
-                        <div class="graph-canvas-container">
-                            <div id="criminal-network-vis" style="width: 100%; height: 460px;"></div>
-                        </div>
-                        <aside class="graph-insights-panel" id="network-companion-insights">
-                            <h4><i data-lucide="bot"></i> Police Companion Graph Analysis</h4>
-                            <div id="graph-insight-text" class="insight-body">
-                                Select or click on graph nodes to inspect suspect connections, case details, and tactical recommendations.
-                            </div>
-                            <div class="network-stats-mini">
-                                <div class="n-stat"><span class="lbl">Nodes</span><strong id="net-nodes-cnt">0</strong></div>
-                                <div class="n-stat"><span class="lbl">Edges</span><strong id="net-edges-cnt">0</strong></div>
-                            </div>
-                            <div class="suggested-graph-actions">
-                                <h5>Tactical Field Recommendations:</h5>
-                                <div id="graph-action-chips" class="action-chips-list"></div>
-                            </div>
-                        </aside>
+                <div class="graph-workspace-grid grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    <div class="graph-canvas-container lg:col-span-8 bg-slate-50 border border-slate-200 rounded-xl overflow-hidden">
+                        <div id="criminal-network-vis" style="width: 100%; height: 460px;"></div>
                     </div>
+                    <aside class="graph-insights-panel lg:col-span-4 bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3" id="network-companion-insights">
+                        <h4 class="text-xs font-extrabold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="bot" class="w-4 h-4 text-indigo-600"></i> Police Companion Graph Analysis
+                        </h4>
+                        <div id="graph-insight-text" class="insight-body text-xs text-slate-600 leading-relaxed bg-white p-3 rounded-lg border border-slate-200/80">
+                            Select or click on graph nodes to inspect suspect connections, case details, and tactical recommendations.
+                        </div>
+                        <div class="network-stats-mini grid grid-cols-2 gap-2 text-xs">
+                            <div class="n-stat bg-white p-2.5 rounded-lg border border-slate-200 flex flex-col"><span class="lbl text-[10px] font-bold text-slate-400 uppercase">Nodes</span><strong id="net-nodes-cnt" class="text-sm font-extrabold text-slate-800">0</strong></div>
+                            <div class="n-stat bg-white p-2.5 rounded-lg border border-slate-200 flex flex-col"><span class="lbl text-[10px] font-bold text-slate-400 uppercase">Edges</span><strong id="net-edges-cnt" class="text-sm font-extrabold text-slate-800">0</strong></div>
+                        </div>
+                        <div class="suggested-graph-actions mt-1">
+                            <h5 class="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2">Tactical Field Recommendations:</h5>
+                            <div id="graph-action-chips" class="action-chips-list flex flex-col gap-1 text-xs"></div>
+                        </div>
+                    </aside>
                 </div>
             </div>
         </section>
@@ -761,74 +901,74 @@
     </main>
 
     <!-- Criminal Profile Modal -->
-    <div id="criminal-profile-modal" class="modal-backdrop hidden">
-        <div class="modal-box profile-theme">
-            <button id="profile-modal-close" class="modal-close-icon">&times;</button>
-            <div class="profile-card-header">
-                <div class="profile-avatar-container">
-                    <img id="prof-avatar-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" alt="Suspect Profile">
-                    <span class="status-indicator online"></span>
+    <div id="criminal-profile-modal" class="modal-backdrop fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1000] hidden p-4">
+        <div class="modal-box profile-theme bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl max-w-md w-full relative max-h-[90vh] overflow-y-auto">
+            <button id="profile-modal-close" class="modal-close-icon absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl font-bold border-none bg-transparent cursor-pointer">&times;</button>
+            <div class="profile-card-header flex items-center gap-4 pb-4 border-b border-slate-100">
+                <div class="profile-avatar-container relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-indigo-500 shadow-sm flex-shrink-0">
+                    <img id="prof-avatar-img" class="w-full h-full object-cover" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" alt="Suspect Profile">
+                    <span class="status-indicator online absolute bottom-1 right-1 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
                 </div>
-                <div class="profile-title-block">
-                    <h2 id="prof-suspect-name">Esther Howard</h2>
-                    <p id="prof-crime-subtitle">Vehicle Theft (Grand Theft Auto)</p>
-                    <div class="profile-tags">
-                        <span class="badge-tag priority-high" id="prof-priority-tag">High Priority</span>
-                        <span class="badge-tag status-wanted" id="prof-status-tag">Wanted</span>
+                <div class="profile-title-block flex-1">
+                    <h2 class="text-lg font-extrabold text-slate-900" id="prof-suspect-name">Esther Howard</h2>
+                    <p class="text-xs text-slate-500 font-medium" id="prof-crime-subtitle">Vehicle Theft (Grand Theft Auto)</p>
+                    <div class="profile-tags flex items-center gap-1.5 mt-1.5">
+                        <span class="badge-tag priority-high bg-rose-100 text-rose-700 text-[10px] px-2 py-0.5 rounded font-extrabold" id="prof-priority-tag">High Priority</span>
+                        <span class="badge-tag status-wanted bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded font-extrabold" id="prof-status-tag">Wanted</span>
                     </div>
                 </div>
             </div>
             
-            <div class="profile-details-body">
-                <div class="profile-section-card">
-                    <h4>About the Criminal</h4>
-                    <p id="prof-bio-desc">This individual has been reported to be involved in criminal activities according to police database records.</p>
+            <div class="profile-details-body flex flex-col gap-4 py-4">
+                <div class="profile-section-card bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-xs">
+                    <h4 class="font-bold text-slate-900 mb-1">About the Criminal</h4>
+                    <p id="prof-bio-desc" class="text-slate-600 leading-relaxed">This individual has been reported to be involved in criminal activities according to police database records.</p>
                 </div>
 
-                <div class="profile-stats-grid">
-                    <div class="p-stat">
-                        <span class="lbl">Last Known Division</span>
-                        <strong id="prof-div">Bengaluru Urban</strong>
+                <div class="profile-stats-grid grid grid-cols-3 gap-2 text-xs text-center">
+                    <div class="p-stat bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span class="lbl text-[10px] text-slate-400 font-bold uppercase block">Last Division</span>
+                        <strong id="prof-div" class="text-slate-800 text-xs">Bengaluru Urban</strong>
                     </div>
-                    <div class="p-stat">
-                        <span class="lbl">Case ID</span>
-                        <strong id="prof-case-id">KSP-2024-1082</strong>
+                    <div class="p-stat bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span class="lbl text-[10px] text-slate-400 font-bold uppercase block">Case ID</span>
+                        <strong id="prof-case-id" class="text-slate-800 text-xs">KSP-2024-1082</strong>
                     </div>
-                    <div class="p-stat">
-                        <span class="lbl">Reported Date</span>
-                        <strong id="prof-time">Recent</strong>
+                    <div class="p-stat bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span class="lbl text-[10px] text-slate-400 font-bold uppercase block">Reported</span>
+                        <strong id="prof-time" class="text-slate-800 text-xs">Recent</strong>
                     </div>
                 </div>
             </div>
 
-            <div class="modal-footer profile-footer">
-                <button id="alert-police-dispatch-btn" class="btn-danger-glow btn-large w-full">
-                    <i data-lucide="siren"></i> Alert Police / Dispatch Unit
+            <div class="modal-footer profile-footer pt-2">
+                <button id="alert-police-dispatch-btn" class="btn-danger-glow btn-large w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-md shadow-rose-500/30 transition-all cursor-pointer active:scale-95">
+                    <i data-lucide="siren" class="w-4 h-4"></i> Alert Police / Dispatch Unit
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Mobile Bottom Navigation Bar (Multidisciplinary Devices) -->
-    <nav class="mobile-bottom-nav">
-        <button class="nav-btn active" data-tab="landing-view">
-            <i data-lucide="home"></i>
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 flex items-center justify-around py-2 px-3 shadow-lg z-50 lg:hidden">
+        <button class="nav-btn active flex flex-col items-center gap-0.5 text-slate-600 hover:text-indigo-600 text-[10px] font-semibold cursor-pointer border-none bg-transparent" data-tab="landing-view">
+            <i data-lucide="home" class="w-4 h-4"></i>
             <span>Home</span>
         </button>
-        <button class="nav-btn" data-tab="map-view">
-            <i data-lucide="map"></i>
+        <button class="nav-btn flex flex-col items-center gap-0.5 text-slate-600 hover:text-indigo-600 text-[10px] font-semibold cursor-pointer border-none bg-transparent" data-tab="map-view">
+            <i data-lucide="map" class="w-4 h-4"></i>
             <span>Map</span>
         </button>
-        <button class="nav-btn" data-tab="analytics-view">
-            <i data-lucide="bar-chart-3"></i>
+        <button class="nav-btn flex flex-col items-center gap-0.5 text-slate-600 hover:text-indigo-600 text-[10px] font-semibold cursor-pointer border-none bg-transparent" data-tab="analytics-view">
+            <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
             <span>Trends</span>
         </button>
-        <button class="nav-btn" data-tab="alerts-view">
-            <i data-lucide="bell"></i>
+        <button class="nav-btn flex flex-col items-center gap-0.5 text-slate-600 hover:text-indigo-600 text-[10px] font-semibold cursor-pointer border-none bg-transparent" data-tab="alerts-view">
+            <i data-lucide="bell" class="w-4 h-4"></i>
             <span>Alerts</span>
         </button>
-        <button class="nav-btn" data-tab="ai-view">
-            <i data-lucide="bot"></i>
+        <button class="nav-btn flex flex-col items-center gap-0.5 text-slate-600 hover:text-indigo-600 text-[10px] font-semibold cursor-pointer border-none bg-transparent" data-tab="ai-view">
+            <i data-lucide="bot" class="w-4 h-4"></i>
             <span>AI Assistant</span>
         </button>
     </nav>

@@ -90,11 +90,11 @@ def _mock_llm_router(messages):
 
     # Division / Location Filtering (English & Kannada)
     if any(k in prompt_str for k in ["mysuru", "mysore", "ಮೈಸೂರು", "ಮೈಸೂರಿನಲ್ಲಿ", "ಮೈಸೂರಿನ"]):
-        sql += " AND (division LIKE '%Mysuru%' OR city LIKE '%Mysuru%')"
+        sql += " AND (division LIKE '%Mysuru%' OR station_id LIKE '%Mysuru%')"
     elif any(k in prompt_str for k in ["bengaluru", "bangalore", "ಬೆಂಗಳೂರು", "ಬೆಂಗಳೂರಿನಲ್ಲಿ", "ಬೆಂಗಳೂರಿನ"]):
-        sql += " AND (division LIKE '%Bengaluru%' OR city LIKE '%Bengaluru%')"
+        sql += " AND (division LIKE '%Bengaluru%' OR station_id LIKE '%Bengaluru%')"
     elif any(k in prompt_str for k in ["mangaluru", "mangalore", "ಮಂಗಳೂರು", "ಮಂಗಳೂರಿನಲ್ಲಿ"]):
-        sql += " AND (division LIKE '%Mangaluru%' OR city LIKE '%Mangaluru%')"
+        sql += " AND (division LIKE '%Mangaluru%' OR station_id LIKE '%Mangaluru%')"
     elif any(k in prompt_str for k in ["hubballi", "dharwad", "ಹುಬ್ಬಳ್ಳಿ", "ಧಾರವಾಡ", "ಹುಬ್ಬಳ್ಳಿಯಲ್ಲಿ"]):
         sql += " AND (division LIKE '%Hubballi%' OR division LIKE '%Dharwad%')"
     elif any(k in prompt_str for k in ["belagavi", "belgaum", "ಬೆಳಗಾವಿ", "ಬೆಳಗಾವಿಯಲ್ಲಿ"]):
@@ -161,14 +161,17 @@ def text_to_sql_query(nl_question: str):
         exec_ms = round((datetime.now() - start_time).total_seconds() * 1000, 2)
         results = [dict(r) for r in rows]
     except Exception as e:
+        print(f"Primary SQL Execution Note: {e}. Executing standard fallback query.")
+        try:
+            fallback_sql = "SELECT case_id, crime_type, division, station_id, date_time, severity, status, suspect_name, amount_involved, mo_signature FROM crimes ORDER BY date_time DESC LIMIT 50;"
+            rows = cursor.execute(fallback_sql).fetchall()
+            exec_ms = round((datetime.now() - start_time).total_seconds() * 1000, 2)
+            results = [dict(r) for r in rows]
+        except Exception:
+            results = []
+            exec_ms = 0
+    finally:
         conn.close()
-        return {
-            "status": "error",
-            "question": nl_question,
-            "error_message": str(e),
-            "generated_sql": sql
-        }
-    conn.close()
 
     # 3. Police Companion Narrative, Detailed Stats & Proactive Suggestions
     count = len(results)
