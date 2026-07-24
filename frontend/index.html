@@ -10,6 +10,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
     
+    <!-- React & ReactDOM UMD -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
     <!-- Leaflet CSS & Heatmap -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -28,22 +32,21 @@
 </head>
 <body class="ksp-theme">
 
-    <!-- Top Command Center Navigation -->
+    <!-- Top Command Center Navigation (Matching Screenshot 1) -->
     <header class="app-header">
         <div class="header-brand">
-            <div class="ksp-emblem">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+            <div class="ksp-emblem" style="background: #0f172a;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2">
                     <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
-                    <path d="M12 8v8M8 12h8"/>
                 </svg>
             </div>
             <div class="brand-title">
-                <h1>KARNATAKA STATE POLICE</h1>
-                <span class="sub-title">Intelligent Crime Analytics & Field Command Platform</span>
+                <h1 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin-bottom: 0;">Karnataka State Police</h1>
+                <span class="sub-title" style="font-size: 0.72rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">CRIME ANALYTICS PLATFORM</span>
             </div>
         </div>
 
-        <!-- Global Multi-Field Dataset Search Bar -->
+        <!-- Global Search Bar -->
         <div class="global-search-wrapper">
             <div class="search-input-box">
                 <i data-lucide="search" class="search-icon"></i>
@@ -53,7 +56,7 @@
             <div id="global-search-suggestions" class="search-suggestions-dropdown hidden"></div>
         </div>
 
-        <!-- Desktop Navigation Tabs -->
+        <!-- Navigation Tabs -->
         <nav class="nav-tabs">
             <button class="nav-btn active" data-tab="landing-view">
                 <i data-lucide="home"></i> Home
@@ -78,7 +81,7 @@
             </button>
         </nav>
 
-        <!-- Header Controls -->
+        <!-- Header Actions & Hamburger Menu -->
         <div class="header-actions">
             <div class="role-selector">
                 <i data-lucide="shield"></i>
@@ -88,111 +91,136 @@
                     <option value="Admin">Role: Admin Command</option>
                 </select>
             </div>
-            <div class="live-clock" id="clock-display">12:00:00 PM</div>
+            <button class="btn-secondary mic-btn" style="border-radius: 10px; padding: 8px 12px;" title="Main Menu">
+                <i data-lucide="menu"></i>
+            </button>
         </div>
     </header>
 
     <!-- Main Workspace Container -->
     <main class="main-content">
 
-        <!-- MODULE 0: MODERN LANDING PAGE (POPPINS TYPOGRAPHY) -->
+        <!-- MODULE 0: MODERN LANDING PAGE (MATCHING SCREENSHOT 1-5) -->
         <section id="landing-view" class="view-panel active">
             <div class="landing-hero-container">
-                <div class="hero-glow-bg"></div>
-
-                <!-- Hero Section Header -->
-                <div class="hero-content">
-                    <span class="hero-pill-tag"><i data-lucide="sparkles"></i> NEXT-GEN POLICE INTELLIGENCE PLATFORM</span>
-                    <h1 class="hero-title">
-                        Analyze, Track & Prevent Crime, <span class="text-gradient-emerald">Instantly.</span>
+                
+                <!-- Hero Section Header (Matching Screenshot 1) -->
+                <div class="hero-content" style="text-align: center; max-width: 800px; margin: 0 auto 32px auto;">
+                    <span class="hero-pill-tag">
+                        <i data-lucide="check-circle-2" style="width: 14px; height: 14px; color: #10b981;"></i> NEXT-GEN POLICE INTELLIGENCE PLATFORM
+                    </span>
+                    <h1 class="hero-title" style="font-size: 2.8rem; font-weight: 900; color: #0f172a; margin: 16px 0;">
+                        Analyze, track & prevent crime, <span style="color: #10b981;">instantly.</span>
                     </h1>
-                    <p class="hero-subtitle">
-                        Powering law enforcement across Karnataka with AI pattern recognition, DBSCAN spatial hotspotting, AI4Bharat IndicWav2Vec voice transcription, and live suspect route tracking.
+                    <p class="hero-subtitle" style="font-size: 1.05rem; color: #475569; line-height: 1.6; margin-bottom: 24px;">
+                        A unified command platform for Karnataka State Police — combining AI pattern recognition, DBSCAN spatial hotspotting, voice-first field reporting, and live suspect route tracking.
                     </p>
 
-                    <div class="hero-cta-group">
+                    <div class="hero-cta-group" style="display: flex; gap: 14px; justify-content: center;">
                         <button class="btn-hero-primary" onclick="switchToTab('map-view')">
-                            <i data-lucide="map-pin"></i> Launch Map Command Center &rarr;
+                            Explore the platform &rarr;
                         </button>
                         <button class="btn-hero-secondary" onclick="switchToTab('analytics-view')">
-                            <i data-lucide="bar-chart-2"></i> Explore 3-Year Crime Trends
+                            How it works
                         </button>
                     </div>
+                </div>
 
-                    <!-- Platform Metrics Banner -->
-                    <div class="platform-metrics-row">
-                        <div class="metric-item">
-                            <h3>1,500+</h3>
-                            <span>Master Crime Records</span>
+                <!-- Metrics Showcase Card (Matching Screenshot 1) -->
+                <div class="metrics-showcase-card">
+                    <div class="metrics-banner-split">
+                        <div class="banner-stat">
+                            <h2>1,500+</h2>
+                            <span>MASTER CRIME RECORDS</span>
                         </div>
-                        <div class="metric-divider"></div>
-                        <div class="metric-item">
-                            <h3>30+</h3>
-                            <span>District Divisions</span>
-                        </div>
-                        <div class="metric-divider"></div>
-                        <div class="metric-item">
-                            <h3>99.4%</h3>
-                            <span>Search Lookup Accuracy</span>
-                        </div>
-                        <div class="metric-divider"></div>
-                        <div class="metric-item">
-                            <h3>Real-Time</h3>
-                            <span>ML Pattern Alerts</span>
+                        <div class="banner-stat-divider"></div>
+                        <div class="banner-stat">
+                            <h2>30+</h2>
+                            <span>DISTRICT DIVISIONS</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Features Showcase Grid -->
-                <div class="features-section">
-                    <div class="section-heading">
-                        <h2>Built for Law Enforcement Command</h2>
-                        <p>End-to-end intelligence suite empowering field officers, crime analysts, and station commanders.</p>
+                <!-- Stat Cards Grid (Matching Screenshot 2) -->
+                <div class="stats-cards-grid margin-top">
+                    <div class="stat-box-card">
+                        <div class="stat-header"><i data-lucide="map-pin" style="width: 16px; height: 16px;"></i> ACTIVE HOTSPOTS</div>
+                        <div class="stat-main-val">24</div>
+                        <div class="stat-delta-badge">+3 today</div>
+                    </div>
+                    <div class="stat-box-card">
+                        <div class="stat-header"><i data-lucide="bar-chart-2" style="width: 16px; height: 16px;"></i> CASES THIS WEEK</div>
+                        <div class="stat-main-val">182</div>
+                        <div class="stat-delta-badge">+12.4%</div>
+                    </div>
+                    <div class="stat-box-card">
+                        <div class="stat-header"><i data-lucide="shield-check" style="width: 16px; height: 16px;"></i> RESOLVED</div>
+                        <div class="stat-main-val">61%</div>
+                        <div class="stat-delta-badge">+4.2%</div>
+                    </div>
+                    <div class="stat-box-card wide-trend">
+                        <div class="stat-header"><i data-lucide="trending-up" style="width: 16px; height: 16px;"></i> INCIDENT TREND · LAST 12 WEEKS</div>
+                        <div class="mini-bar-chart">
+                            <span class="bar-col" style="height: 35%;"></span>
+                            <span class="bar-col" style="height: 48%;"></span>
+                            <span class="bar-col" style="height: 42%;"></span>
+                            <span class="bar-col" style="height: 60%;"></span>
+                            <span class="bar-col" style="height: 55%;"></span>
+                            <span class="bar-col" style="height: 65%;"></span>
+                            <span class="bar-col" style="height: 72%;"></span>
+                            <span class="bar-col" style="height: 68%;"></span>
+                            <span class="bar-col" style="height: 85%;"></span>
+                            <span class="bar-col" style="height: 80%;"></span>
+                            <span class="bar-col" style="height: 92%;"></span>
+                            <span class="bar-col active" style="height: 100%;"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features Showcase Grid (Matching Screenshot 3 & 4) -->
+                <div class="features-section" style="margin-top: 48px;">
+                    <div class="section-heading" style="text-align: center; margin-bottom: 28px;">
+                        <span class="section-tag-green">PLATFORM</span>
+                        <h2 style="font-size: 2rem; font-weight: 900; color: #0f172a;">Built for law enforcement command</h2>
+                        <p style="font-size: 0.95rem; color: #64748b; margin-top: 6px;">An end-to-end intelligence suite for field officers, crime analysts, and station commanders.</p>
                     </div>
 
                     <div class="features-grid">
-                        <div class="feature-card tilt-card" onclick="switchToTab('map-view')">
-                            <div class="feature-icon emerald"><i data-lucide="map"></i></div>
-                            <h3>Geospatial Suspect Tracking</h3>
-                            <p>Live Leaflet vector mapping with custom suspect photo markers, waypoint vectors, and blue dashed route tracking paths.</p>
-                            <span class="card-link">Open Tracking Map &rarr;</span>
+                        <div class="feature-card-clean" onclick="switchToTab('map-view')">
+                            <div class="icon-box-subtle"><i data-lucide="map"></i></div>
+                            <h3>Geospatial suspect tracking</h3>
+                            <p>Live vector mapping with custom markers, waypoint vectors, and dashed suspect route tracking.</p>
                         </div>
 
-                        <div class="feature-card tilt-card" onclick="switchToTab('analytics-view')">
-                            <div class="feature-icon gold"><i data-lucide="trending-up"></i></div>
-                            <h3>3-Year Trend Analytics</h3>
+                        <div class="feature-card-clean" onclick="switchToTab('analytics-view')">
+                            <div class="icon-box-subtle"><i data-lucide="trending-up"></i></div>
+                            <h3>3-year trend analytics</h3>
                             <p>Monthly incident timelines, division volume bar charts, crime type doughnut distributions, and historical district tables.</p>
-                            <span class="card-link">View Analytics &rarr;</span>
                         </div>
 
-                        <div class="feature-card tilt-card" onclick="switchToTab('reporting-view')">
-                            <div class="feature-icon blue"><i data-lucide="file-plus-2"></i></div>
-                            <h3>Field Incident Reporting</h3>
-                            <p>GPS device auto-location fix, interactive coordinate picker map, field note logger, and instant DBSCAN pattern scan.</p>
-                            <span class="card-link">Report Incident &rarr;</span>
+                        <div class="feature-card-clean" onclick="switchToTab('resolution-view')">
+                            <div class="icon-box-subtle"><i data-lucide="check-square"></i></div>
+                            <h3>Case resolution management</h3>
+                            <p>Multi-field case lookup, status updates, suspect confession logs, and recovery ledger.</p>
                         </div>
 
-                        <div class="feature-card tilt-card" onclick="switchToTab('resolution-view')">
-                            <div class="feature-icon purple"><i data-lucide="check-circle-2"></i></div>
-                            <h3>Case Resolution Management</h3>
-                            <p>Multi-field case lookup engine with status updates, suspect confession logger, and property recovery ledger.</p>
-                            <span class="card-link">Manage Cases &rarr;</span>
+                        <div class="feature-card-clean" onclick="switchToTab('alerts-view')">
+                            <div class="icon-box-subtle"><i data-lucide="cpu"></i></div>
+                            <h3>ML recurrence alerts</h3>
+                            <p>Real-time spatial cluster detection with modus operandi pattern matching and confidence scoring.</p>
                         </div>
 
-                        <div class="feature-card tilt-card" onclick="switchToTab('alerts-view')">
-                            <div class="feature-icon red"><i data-lucide="cpu"></i></div>
-                            <h3>ML Recurrence Alerts Feed</h3>
-                            <p>Real-time spatial DBSCAN cluster detection and modus operandi (MO) pattern matching with confidence scoring.</p>
-                            <span class="card-link">Inspect Alerts &rarr;</span>
-                        </div>
-
-                        <div class="feature-card tilt-card" onclick="switchToTab('ai-view')">
-                            <div class="feature-icon cyan"><i data-lucide="bot"></i></div>
-                            <h3>AI Natural Language Assistant</h3>
-                            <p>Text-to-SQL natural language query engine in English and Kannada with AI4Bharat IndicWav2Vec voice transcription.</p>
-                            <span class="card-link">Query AI Assistant &rarr;</span>
+                        <div class="feature-card-clean wide-feature" onclick="switchToTab('ai-view')">
+                            <div class="icon-box-subtle"><i data-lucide="bot"></i></div>
+                            <h3>AI assistant, bilingual</h3>
+                            <p>Ask questions in English or Kannada. Text-to-SQL over case data and criminal network analysis.</p>
                         </div>
                     </div>
+                </div>
+
+                <!-- REACT VOICE AI LISTENING & TRANSCRIBING COMPONENT (Matching Screenshot 5) -->
+                <div class="voice-ai-section-wrapper" style="margin-top: 40px;">
+                    <div id="react-voice-ai-root"></div>
                 </div>
             </div>
         </section>
@@ -834,5 +862,6 @@
     </nav>
 
     <script src="/static/app.js"></script>
+    <script src="/static/react_voice_ai.js"></script>
 </body>
 </html>
