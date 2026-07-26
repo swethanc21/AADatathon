@@ -56,8 +56,7 @@ def _mock_llm_router(messages):
         user_msg = str(messages)
     prompt_str = user_msg.lower()
 
-    sql = "SELECT case_id, crime_type, division, station_id, date_time, severity, status, suspect_name, amount_involved, mo_signature FROM crimes WHERE 1=1"
-
+    sql = "SELECT case_id, crime_type, division, station_id, date_time, severity, status, suspect_name, amount_involved, mo_signature, latitude, longitude FROM crimes WHERE 1=1"
     # Crime Type Strict Filtering (English & Kannada Unicode / Transliteration)
     if any(k in prompt_str for k in ["vehicle theft", "ವಾಹನ", "ವಾಹನ ಕಳವು", "ಬೈಕ್ ಕಳವು", "ಕಾರು ಕಳವು", "vahana kalavu", "bike theft"]):
         sql += " AND crime_type = 'Vehicle Theft'"
@@ -148,7 +147,7 @@ def text_to_sql_query(nl_question: str):
     
     # Fallback safety if LLM hallucinated
     if not sql.upper().startswith("SELECT"):
-        sql = "SELECT case_id, crime_type, division, station_id, date_time, severity, status, suspect_name, amount_involved, mo_signature FROM crimes ORDER BY date_time DESC LIMIT 50;"
+        sql = "SELECT case_id, crime_type, division, station_id, date_time, severity, status, suspect_name, amount_involved, mo_signature, latitude, longitude FROM crimes ORDER BY date_time DESC LIMIT 50;"
 
     # 2. Database Execution
     start_time = datetime.now()
@@ -163,7 +162,7 @@ def text_to_sql_query(nl_question: str):
     except Exception as e:
         print(f"Primary SQL Execution Note: {e}. Executing standard fallback query.")
         try:
-            fallback_sql = "SELECT case_id, crime_type, division, station_id, date_time, severity, status, suspect_name, amount_involved, mo_signature FROM crimes ORDER BY date_time DESC LIMIT 50;"
+            fallback_sql = "SELECT case_id, crime_type, division, station_id, date_time, severity, status, suspect_name, amount_involved, mo_signature, latitude, longitude FROM crimes ORDER BY date_time DESC LIMIT 50;"
             rows = cursor.execute(fallback_sql).fetchall()
             exec_ms = round((datetime.now() - start_time).total_seconds() * 1000, 2)
             results = [dict(r) for r in rows]
