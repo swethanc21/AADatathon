@@ -27,28 +27,45 @@ from scripts.ingest_data import DB_PATH
 use_firestore = False
 db_fs = None
 
+def _init_firebase_from_dict(creds_dict, source):
+    global db_fs, use_firestore
+    cred = credentials.Certificate(creds_dict)
+    firebase_admin.initialize_app(cred)
+    db_fs = firestore.client()
+    use_firestore = True
+    print(f"Firebase initialized via {source}.")
+
+# Method 1: Single env var FIREBASE_CREDENTIALS (full JSON)
 firebase_creds_json = os.environ.get("FIREBASE_CREDENTIALS")
 if firebase_creds_json:
     try:
-        creds_dict = json.loads(firebase_creds_json)
-        cred = credentials.Certificate(creds_dict)
-        firebase_admin.initialize_app(cred)
-        db_fs = firestore.client()
-        use_firestore = True
-        print("Firebase initialized via environment variable.")
+        _init_firebase_from_dict(json.loads(firebase_creds_json), "FIREBASE_CREDENTIALS env var")
     except Exception as e:
         print(f"Error parsing FIREBASE_CREDENTIALS: {e}")
-else:
+
+# Method 2: Split env vars FIREBASE_CREDS_1 + FIREBASE_CREDS_2 + FIREBASE_CREDS_3
+# Use this when the JSON exceeds Catalyst's 1000-char env var limit
+if not use_firestore:
+    part1 = os.environ.get("FIREBASE_CREDS_1", "")
+    part2 = os.environ.get("FIREBASE_CREDS_2", "")
+    part3 = os.environ.get("FIREBASE_CREDS_3", "")
+    if part1 and part2:
+        try:
+            combined = part1 + part2 + part3
+            _init_firebase_from_dict(json.loads(combined), "split env vars (FIREBASE_CREDS_1/2/3)")
+        except Exception as e:
+            print(f"Error parsing split Firebase credentials: {e}")
+
+# Method 3: Local credentials file (for development)
+if not use_firestore:
     local_creds_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "firebase-credentials.json")
     if os.path.exists(local_creds_path):
         try:
-            cred = credentials.Certificate(local_creds_path)
-            firebase_admin.initialize_app(cred)
-            db_fs = firestore.client()
-            use_firestore = True
-            print(f"Firebase initialized via local credentials: {local_creds_path}")
+            with open(local_creds_path, "r") as f:
+                _init_firebase_from_dict(json.load(f), f"local file ({local_creds_path})")
         except Exception as e:
             print(f"Error loading local Firebase credentials: {e}")
+
 
 # Shared in-memory connection URL for caching shared DB state across connections
 MEM_DB_URI = "file:ksp_crimes_in_mem?mode=memory&cache=shared"
