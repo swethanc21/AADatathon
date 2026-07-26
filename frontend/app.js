@@ -1,16 +1,38 @@
 // KSP Intelligent Crime Analytics & Field Reporting Platform - Frontend Engine
 
 // API Routing Interceptor for hosted environments
-// If hosted on a cloud domain (like Zoho Catalyst Slate), route all API calls to the local Python backend
+// If hosted on a cloud domain (like Zoho Catalyst Slate), route all API calls to the local Python backend,
+// unless the backend is hosted on the same origin (e.g. Render, Heroku, Zoho App Sail) or a custom backend is configured.
 (function() {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (!isLocal) {
         const originalFetch = window.fetch;
-        window.fetch = function(input, init) {
+        let isRelativeConfirmed = false;
+        let testPromise = null;
+
+        function checkBackend() {
+            if (testPromise) return testPromise;
+            testPromise = originalFetch('/api/crimes?limit=1')
+                .then(res => {
+                    const contentType = res.headers.get("content-type");
+                    if (res.ok && contentType && contentType.includes("application/json")) {
+                        isRelativeConfirmed = true;
+                    }
+                })
+                .catch(() => {
+                    isRelativeConfirmed = false;
+                });
+            return testPromise;
+        }
+
+        window.fetch = async function(input, init) {
             if (typeof input === 'string' && input.startsWith('/api/')) {
-                // Modify this URL if you deploy your backend (app.py) to a cloud service (e.g., Render, Heroku, Zoho App Sail)
-                const BACKEND_URL = 'http://127.0.0.1:8000'; 
-                input = BACKEND_URL + input;
+                await checkBackend();
+                if (!isRelativeConfirmed) {
+                    // Fallback to local/configured backend URL
+                    const BACKEND_URL = 'http://127.0.0.1:8000'; 
+                    input = BACKEND_URL + input;
+                }
             }
             return originalFetch(input, init);
         };
