@@ -1,0 +1,9 @@
+{
+  "name": "aadatathon-frontend",
+  "version": "1.0.0",
+  "description": "KSP Intelligent Crime Analytics Platform Frontend",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {}
+}
