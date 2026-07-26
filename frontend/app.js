@@ -84,7 +84,12 @@ function switchToTab(targetTab) {
     if (activePanel) activePanel.classList.add("active");
 
     if (targetTab === "map-view" && crimeMap) {
-        setTimeout(() => crimeMap.invalidateSize(), 200);
+        setTimeout(() => {
+            crimeMap.invalidateSize();
+            if (typeof renderMapMarkers === 'function') {
+                renderMapMarkers(masterCrimesData);
+            }
+        }, 200);
     } else if (targetTab === "reporting-view" && pickerMap) {
         setTimeout(() => pickerMap.invalidateSize(), 200);
     } else if (targetTab === "ai-view") {
@@ -352,7 +357,9 @@ function renderMapMarkers(crimes) {
         heatPoints.push([lat, lng, intensity]);
     });
 
-    if (showHeatmap && heatPoints.length > 0) {
+    const mapEl = document.getElementById("crime-map");
+    const isMapVisible = mapEl && mapEl.clientWidth > 0 && mapEl.clientHeight > 0;
+    if (showHeatmap && heatPoints.length > 0 && isMapVisible) {
         heatLayer = L.heatLayer(heatPoints, {
             radius: 25,
             blur: 15,
