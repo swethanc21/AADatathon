@@ -7,3 +7,4 @@ requests
 scikit-learn
 httpx
 python-multipart
+firebase-admin

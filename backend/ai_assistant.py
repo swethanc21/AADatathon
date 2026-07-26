@@ -4,7 +4,8 @@ import sqlite3
 import json
 from datetime import datetime
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "ksp_crimes.db")
+# Shared in-memory database URI — must match what app.py creates on startup
+MEM_DB_URI = "file:ksp_crimes_in_mem?mode=memory&cache=shared"
 
 import time
 import requests
@@ -151,7 +152,7 @@ def text_to_sql_query(nl_question: str):
 
     # 2. Database Execution
     start_time = datetime.now()
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(MEM_DB_URI, uri=True)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -424,7 +425,7 @@ def generate_criminal_network_graph(limit=100):
     - Modus Operandi (MO) signatures
     Plus AI Police Companion Network Analysis Insights & Field Suggestions.
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(MEM_DB_URI, uri=True)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 

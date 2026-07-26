@@ -9,4 +9,5 @@ build/
 dist/
 ksp_crimes.db
 
-
+# Firebase service account key - NEVER commit this to version control
+firebase-credentials.json
