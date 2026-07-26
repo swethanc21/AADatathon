@@ -29,9 +29,20 @@
             if (typeof input === 'string' && input.startsWith('/api/')) {
                 await checkBackend();
                 if (!isRelativeConfirmed) {
-                    // Fallback to local/configured backend URL
-                    const BACKEND_URL = 'http://127.0.0.1:8000'; 
-                    input = BACKEND_URL + input;
+                    // Check if custom backend URL is provided via URL parameter or saved in localStorage
+                    const urlParams = new URLSearchParams(window.location.search);
+                    let backendUrl = urlParams.get('backend') || localStorage.getItem('BACKEND_URL') || 'http://127.0.0.1:8000';
+                    
+                    if (urlParams.has('backend')) {
+                        localStorage.setItem('BACKEND_URL', urlParams.get('backend'));
+                    }
+
+                    // Trim trailing slash if present
+                    if (backendUrl.endsWith('/')) {
+                        backendUrl = backendUrl.slice(0, -1);
+                    }
+
+                    input = backendUrl + input;
                 }
             }
             return originalFetch(input, init);
