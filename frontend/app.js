@@ -1,5 +1,22 @@
 // KSP Intelligent Crime Analytics & Field Reporting Platform - Frontend Engine
 
+// API Routing Interceptor for hosted environments
+// If hosted on a cloud domain (like Zoho Catalyst Slate), route all API calls to the local Python backend
+(function() {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!isLocal) {
+        const originalFetch = window.fetch;
+        window.fetch = function(input, init) {
+            if (typeof input === 'string' && input.startsWith('/api/')) {
+                // Modify this URL if you deploy your backend (app.py) to a cloud service (e.g., Render, Heroku, Zoho App Sail)
+                const BACKEND_URL = 'http://127.0.0.1:8000'; 
+                input = BACKEND_URL + input;
+            }
+            return originalFetch(input, init);
+        };
+    }
+})();
+
 let crimeMap = null;
 let pickerMap = null;
 let pickerMarker = null;
